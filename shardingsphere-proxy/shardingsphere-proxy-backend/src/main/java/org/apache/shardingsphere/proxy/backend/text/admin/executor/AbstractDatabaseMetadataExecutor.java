@@ -34,6 +34,7 @@ import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.DatabaseNotExistedException;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.admin.FunctionWithException;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -178,10 +179,16 @@ public abstract class AbstractDatabaseMetadataExecutor implements DatabaseAdminQ
      */
     @Slf4j
     public static class DefaultDatabaseMetadataExecutor extends AbstractDatabaseMetadataExecutor {
+        @Getter
+        private SelectStatement selectStatement;
         
         @Getter
         private final String sql;
-        
+
+        public DefaultDatabaseMetadataExecutor(SelectStatement selectStatement,final String sql) {
+            this.selectStatement = selectStatement;
+            this.sql = sql;
+        }
         public DefaultDatabaseMetadataExecutor(final String sql) {
             this.sql = sql;
         }
@@ -212,6 +219,7 @@ public abstract class AbstractDatabaseMetadataExecutor implements DatabaseAdminQ
         protected void getSourceData(final String schemaName, final FunctionWithException<ResultSet, SQLException> callback) throws SQLException {
             ShardingSphereResource resource = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData(schemaName).getResource();
             Optional<Entry<String, DataSource>> dataSourceEntry = resource.getDataSources().entrySet().stream().findFirst();
+            // TODO: 2021/12/27 处理查询schema下的表元信息
             log.info("Actual SQL: {} ::: {}", dataSourceEntry.orElseThrow(DatabaseNotExistedException::new).getKey(), sql);
             try (Connection conn = dataSourceEntry.get().getValue().getConnection();
                  PreparedStatement ps = conn.prepareStatement(sql);
@@ -219,7 +227,7 @@ public abstract class AbstractDatabaseMetadataExecutor implements DatabaseAdminQ
                 callback.apply(resultSet);
             }
         }
-        
+
         /**
          * Custom processing.
          *

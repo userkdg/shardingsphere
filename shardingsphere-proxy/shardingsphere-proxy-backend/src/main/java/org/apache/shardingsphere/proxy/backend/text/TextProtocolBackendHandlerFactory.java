@@ -152,7 +152,7 @@ public final class TextProtocolBackendHandlerFactory {
     
     private static void checkUnsupportedSQLStatement(final SQLStatement sqlStatement) {
         if (sqlStatement instanceof DCLStatement || sqlStatement instanceof FlushStatement || sqlStatement instanceof MySQLShowCreateUserStatement) {
-            throw new UnsupportedOperationException("Unsupported operation");
+            throw new UnsupportedOperationException("Proxy Unsupported operation");
         }
     }
 }

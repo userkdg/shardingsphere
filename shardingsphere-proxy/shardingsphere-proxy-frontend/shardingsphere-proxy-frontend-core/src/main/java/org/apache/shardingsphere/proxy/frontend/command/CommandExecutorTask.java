@@ -17,11 +17,16 @@
 
 package org.apache.shardingsphere.proxy.frontend.command;
 
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.db.protocol.CommonConstants;
+import org.apache.shardingsphere.db.protocol.mysql.packet.command.query.text.query.MySQLComQueryPacket;
+import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLEofPacket;
 import org.apache.shardingsphere.db.protocol.packet.CommandPacket;
 import org.apache.shardingsphere.db.protocol.packet.CommandPacketType;
 import org.apache.shardingsphere.db.protocol.packet.DatabasePacket;
@@ -35,9 +40,7 @@ import org.apache.shardingsphere.proxy.frontend.exception.ExpectedExceptions;
 import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
 
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -91,6 +94,30 @@ public final class CommandExecutorTask implements Runnable {
         CommandExecuteEngine commandExecuteEngine = databaseProtocolFrontendEngine.getCommandExecuteEngine();
         CommandPacketType type = commandExecuteEngine.getCommandPacketType(payload);
         CommandPacket commandPacket = commandExecuteEngine.getCommandPacket(payload, type, connectionSession);
+        if (commandPacket instanceof MySQLComQueryPacket) {
+            MySQLComQueryPacket packet = (MySQLComQueryPacket) commandPacket;
+            if (packet.getSql().toLowerCase().contains("information_schema.engines")){
+                List<SQLStatement> sqlStatements = SQLUtils.parseStatements(packet.getSql(), DbType.mysql, true);
+                // 针对多sql的情况做加工
+                if (sqlStatements.size() > 1) {
+                    List<CommandPacket> commandPackets = new ArrayList<>(sqlStatements.size());
+                    for (SQLStatement sqlStatement : sqlStatements) {
+                        String sql = SQLUtils.toSQLString(sqlStatement, DbType.mysql);
+                        commandPackets.add(new MySQLComQueryPacket(sql));
+                    }
+                    List<Boolean> needFlush = new ArrayList<>();
+                    for (CommandPacket mysqlComPacket : commandPackets) {
+                        boolean flushForPerCommandPacket = singleCommandExecutor(context, commandExecuteEngine, type, mysqlComPacket);
+                        needFlush.add(flushForPerCommandPacket);
+                    }
+                    return needFlush.stream().anyMatch(Boolean.TRUE::equals);
+                }
+            }
+        }
+        return singleCommandExecutor(context, commandExecuteEngine, type, commandPacket);
+    }
+
+    private boolean singleCommandExecutor(ChannelHandlerContext context, CommandExecuteEngine commandExecuteEngine, CommandPacketType type, CommandPacket commandPacket) throws SQLException {
         CommandExecutor commandExecutor = commandExecuteEngine.getCommandExecutor(type, commandPacket, connectionSession);
         try {
             Collection<DatabasePacket<?>> responsePackets = commandExecutor.execute();
@@ -106,7 +133,7 @@ public final class CommandExecutorTask implements Runnable {
         }
         return databaseProtocolFrontendEngine.getFrontendContext().isFlushForPerCommandPacket();
     }
-    
+
     private void processException(final Exception cause) {
         if (!ExpectedExceptions.isExpected(cause.getClass())) {
             log.error("Exception occur: ", cause);

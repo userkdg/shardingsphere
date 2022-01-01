@@ -23,15 +23,13 @@ import org.apache.shardingsphere.infra.binder.statement.CommonSQLStatementContex
 import org.apache.shardingsphere.infra.binder.type.SchemaAvailable;
 import org.apache.shardingsphere.infra.binder.type.TableAvailable;
 import org.apache.shardingsphere.infra.binder.type.WhereAvailable;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.sql.parser.sql.common.extractor.TableExtractor;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DeleteStatement;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,11 +42,18 @@ public final class DeleteStatementContext extends CommonSQLStatementContext<Dele
     private final TablesContext tablesContext;
     
     private final String schemaName;
-    
-    public DeleteStatementContext(final DeleteStatement sqlStatement, final String schemaName) {
+
+    private final Map<String, ShardingSphereMetaData> metaDataMap;
+
+    private final List<Object> parameters;
+
+    public DeleteStatementContext(Map<String, ShardingSphereMetaData> metaDataMap, List<Object> parameters, final DeleteStatement sqlStatement, final String schemaName) {
         super(sqlStatement);
         tablesContext = new TablesContext(getAllSimpleTableSegments());
         this.schemaName = schemaName;
+
+        this.metaDataMap = metaDataMap;
+        this.parameters= parameters;
     }
     
     private Collection<SimpleTableSegment> getAllSimpleTableSegments() {

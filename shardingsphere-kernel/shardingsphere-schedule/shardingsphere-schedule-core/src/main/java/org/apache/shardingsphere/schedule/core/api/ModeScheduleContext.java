@@ -62,7 +62,7 @@ public final class ModeScheduleContext {
         switch (modeType) {
             // TODO do not hard-code mode type, refactor later
             case "CLUSTER":
-                return initRegistryCenterForClusterMode(modeConfig);
+//                return initRegistryCenterForClusterMode(modeConfig);
             case "STANDALONE":
                 return null;
             case "MEMORY":
@@ -80,6 +80,10 @@ public final class ModeScheduleContext {
         // TODO do not hard-code cluster type and property key, refactor later
         if ("ZooKeeper".equalsIgnoreCase(clusterType)) {
             ZookeeperConfiguration zkConfig = new ZookeeperConfiguration(props.getProperty("server-lists"), props.getProperty("namespace"));
+            zkConfig.setConnectionTimeoutMilliseconds(70000);
+            zkConfig.setMaxRetries(3);
+            zkConfig.setSessionTimeoutMilliseconds(70000);
+            zkConfig.setBaseSleepTimeMilliseconds(1000);
             CoordinatorRegistryCenter result = new ZookeeperRegistryCenter(zkConfig);
             result.init();
             return result;

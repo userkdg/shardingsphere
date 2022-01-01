@@ -85,7 +85,7 @@ public final class DeleteStatementContextTest {
         tableSegment.setRight(table2);
         deleteStatement.setWhere(whereSegment);
         deleteStatement.setTableSegment(tableSegment);
-        DeleteStatementContext actual = new DeleteStatementContext(deleteStatement, DefaultSchema.LOGIC_NAME);
+        DeleteStatementContext actual = new DeleteStatementContext(null, null, deleteStatement, DefaultSchema.LOGIC_NAME);
         assertThat(actual.getTablesContext().getTableNames(), is(new HashSet<>(Arrays.asList("tbl_1", "tbl_2"))));
         assertThat(actual.getWhere(), is(Optional.of(whereSegment)));
         assertThat(actual.getAllTables().stream().map(a -> a.getTableName().getIdentifier().getValue()).collect(Collectors.toList()), is(Arrays.asList("tbl_1", "tbl_2")));

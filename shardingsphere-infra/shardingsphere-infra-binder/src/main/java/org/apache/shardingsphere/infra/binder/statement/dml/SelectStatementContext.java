@@ -88,12 +88,18 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
     
     @Setter
     private SubqueryType subqueryType;
-    
+
+    private final Map<String, ShardingSphereMetaData> metaDataMap;
+
+    private final List<Object> parameters;
+
     @Setter
     private boolean needAggregateRewrite;
     
     public SelectStatementContext(final Map<String, ShardingSphereMetaData> metaDataMap, final List<Object> parameters, final SelectStatement sqlStatement, final String defaultSchemaName) {
         super(sqlStatement);
+        this.metaDataMap = metaDataMap;
+        this.parameters = parameters;
         subqueryContexts = createSubqueryContexts(metaDataMap, parameters, defaultSchemaName);
         tablesContext = new TablesContext(getAllTableSegments(), subqueryContexts);
         ShardingSphereSchema schema = getSchema(metaDataMap, defaultSchemaName);

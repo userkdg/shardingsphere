@@ -28,6 +28,7 @@ import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.Par
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.ShorthandProjection;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.SubqueryProjection;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.AggregationType;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
@@ -44,12 +45,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Sub
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -168,7 +164,9 @@ public final class ProjectionEngine {
         SelectStatement subSelectStatement = ((SubqueryTableSegment) table).getSubquery().getSelect();
         Collection<Projection> projections = subSelectStatement.getProjections().getProjections().stream().map(each 
             -> createProjection(subSelectStatement.getFrom(), each).orElse(null)).filter(Objects::nonNull).collect(Collectors.toList());
-        return getColumnProjections(projections);
+        //  2021/12/30 子查询的projections都是有别名就去别名，没有的就拿name 即getColumnLabel
+        String tableAlias = table.getAlias().orElseThrow(() -> new ShardingSphereException("must to define subquery alias name !"));
+        return getSubqueryColumnProjections(tableAlias, projections);
     }
     
     private Collection<ColumnProjection> getShorthandColumnsFromJoinTableSegment(final TableSegment table, final ProjectionSegment projectionSegment) {
@@ -193,7 +191,24 @@ public final class ProjectionEngine {
         }
         return result;
     }
-    
+
+    private Collection<ColumnProjection> getSubqueryColumnProjections(String tableAlias, final Collection<Projection> projections) {
+        Collection<ColumnProjection> result = new LinkedList<>();
+        for (Projection each : projections) {
+            if (each instanceof ColumnProjection) {
+                ColumnProjection colP = (ColumnProjection) each;
+                ColumnProjection newColP = new ColumnProjection(tableAlias, colP.getColumnLabel(), null);
+                result.add(newColP);
+            }
+            if (each instanceof ShorthandProjection) {
+                Collection<ColumnProjection> colPs = ((ShorthandProjection) each).getActualColumns().values();
+                List<ColumnProjection> newColPs = colPs.stream().map(colP -> new ColumnProjection(tableAlias, colP.getColumnLabel(), null)).collect(Collectors.toList());
+                result.addAll(newColPs);
+            }
+        }
+        return result;
+    }
+
     private void appendAverageDistinctDerivedProjection(final AggregationDistinctProjection averageDistinctProjection) {
         String innerExpression = averageDistinctProjection.getInnerExpression();
         String distinctInnerExpression = averageDistinctProjection.getDistinctInnerExpression();

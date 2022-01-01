@@ -20,11 +20,7 @@ package org.apache.shardingsphere.sql.parser.sql.common.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.SubqueryType;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BetweenExpression;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.InExpression;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ListExpression;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.*;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubqueryExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubquerySegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionSegment;
@@ -101,6 +97,12 @@ public final class SubqueryExtractUtil {
         if (expressionSegment instanceof SubqueryExpressionSegment) {
             SubquerySegment subquery = ((SubqueryExpressionSegment) expressionSegment).getSubquery();
             subquery.setSubqueryType(SubqueryType.PREDICATE_SUBQUERY);
+            result.add(subquery);
+            result.addAll(getSubquerySegments(subquery.getSelect()));
+        }
+        if (expressionSegment instanceof ExistsSubqueryExpression){
+            SubquerySegment subquery = ((ExistsSubqueryExpression) expressionSegment).getSubquery();
+            subquery.setSubqueryType(null);
             result.add(subquery);
             result.addAll(getSubquerySegments(subquery.getSelect()));
         }

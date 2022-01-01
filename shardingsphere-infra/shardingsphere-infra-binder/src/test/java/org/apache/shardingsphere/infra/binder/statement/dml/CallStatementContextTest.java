@@ -44,7 +44,7 @@ public final class CallStatementContextTest {
     }
     
     private void assertNewInstance(final CallStatement callStatement) {
-        CallStatementContext actual = new CallStatementContext(callStatement, DefaultSchema.LOGIC_NAME);
+        CallStatementContext actual = new CallStatementContext(null, null, callStatement, DefaultSchema.LOGIC_NAME);
         assertThat(actual, instanceOf(CommonSQLStatementContext.class));
         assertThat(actual.getSqlStatement(), is(callStatement));
         assertThat(actual.getTablesContext().getTableNames(), is(Collections.emptySet()));

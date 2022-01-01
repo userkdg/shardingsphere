@@ -19,6 +19,8 @@ package org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -32,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Connection savepoint manager for local transaction.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public final class ConnectionSavepointManager {
     
     private static final ConnectionSavepointManager INSTANCE = new ConnectionSavepointManager();

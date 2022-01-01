@@ -71,9 +71,15 @@ public final class InsertStatementContext extends CommonSQLStatementContext<Inse
     private final GeneratedKeyContext generatedKeyContext;
     
     private final String schemaName;
-    
+
+    private final Map<String, ShardingSphereMetaData> metaDataMap;
+
+    private final List<Object> parameters;
+
     public InsertStatementContext(final Map<String, ShardingSphereMetaData> metaDataMap, final List<Object> parameters, final InsertStatement sqlStatement, final String defaultSchemaName) {
         super(sqlStatement);
+        this.metaDataMap = metaDataMap;
+        this.parameters = parameters;
         AtomicInteger parametersOffset = new AtomicInteger(0);
         insertValueContexts = getInsertValueContexts(parameters, parametersOffset);
         insertSelectContext = getInsertSelectContext(metaDataMap, parameters, parametersOffset, defaultSchemaName).orElse(null);

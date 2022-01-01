@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.infra.rewrite.sql.token.generator;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.rewrite.sql.token.generator.aware.ParametersAware;
@@ -33,6 +34,7 @@ import java.util.Map;
 /**
  * SQL token generators.
  */
+@Slf4j
 public final class SQLTokenGenerators {
     
     private final Map<Class<?>, SQLTokenGenerator> sqlTokenGenerators = new LinkedHashMap<>();
@@ -69,10 +71,15 @@ public final class SQLTokenGenerators {
             if (each instanceof OptionalSQLTokenGenerator) {
                 SQLToken sqlToken = ((OptionalSQLTokenGenerator) each).generateSQLToken(sqlStatementContext);
                 if (!result.contains(sqlToken)) {
+                    log.info("collector {} token:{}",each.getClass().getName(), sqlToken);
                     result.add(sqlToken);
                 }
             } else if (each instanceof CollectionSQLTokenGenerator) {
-                result.addAll(((CollectionSQLTokenGenerator) each).generateSQLTokens(sqlStatementContext));
+                Collection tokens = ((CollectionSQLTokenGenerator) each).generateSQLTokens(sqlStatementContext);
+                if (!tokens.isEmpty()){
+                    log.info("collector {} token:{}",each.getClass().getName(), result);
+                }
+                result.addAll(tokens);
             }
         }
         return result;

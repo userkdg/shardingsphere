@@ -71,7 +71,7 @@ public final class ShardingUpdateStatementValidatorTest {
     public void assertPreValidateWhenUpdateSingleTable() {
         UpdateStatement updateStatement = createUpdateStatement();
         updateStatement.setTableSegment(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("user"))));
-        SQLStatementContext<UpdateStatement> sqlStatementContext = new UpdateStatementContext(updateStatement, DefaultSchema.LOGIC_NAME);
+        SQLStatementContext<UpdateStatement> sqlStatementContext = new UpdateStatementContext(null, null, updateStatement, DefaultSchema.LOGIC_NAME);
         Collection<String> tableNames = sqlStatementContext.getTablesContext().getTableNames();
         when(shardingRule.isAllShardingTables(tableNames)).thenReturn(true);
         when(shardingRule.tableRuleExists(tableNames)).thenReturn(true);
@@ -85,7 +85,7 @@ public final class ShardingUpdateStatementValidatorTest {
         joinTableSegment.setLeft(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("user"))));
         joinTableSegment.setRight(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("order"))));
         updateStatement.setTableSegment(joinTableSegment);
-        SQLStatementContext<UpdateStatement> sqlStatementContext = new UpdateStatementContext(updateStatement, DefaultSchema.LOGIC_NAME);
+        SQLStatementContext<UpdateStatement> sqlStatementContext = new UpdateStatementContext(null, null, updateStatement, DefaultSchema.LOGIC_NAME);
         Collection<String> tableNames = sqlStatementContext.getTablesContext().getTableNames();
         when(shardingRule.isAllShardingTables(tableNames)).thenReturn(false);
         when(shardingRule.tableRuleExists(tableNames)).thenReturn(true);
@@ -94,7 +94,7 @@ public final class ShardingUpdateStatementValidatorTest {
     
     @Test
     public void assertPostValidateWhenNotUpdateShardingColumn() {
-        UpdateStatementContext sqlStatementContext = new UpdateStatementContext(createUpdateStatement(), DefaultSchema.LOGIC_NAME);
+        UpdateStatementContext sqlStatementContext = new UpdateStatementContext(null, null, createUpdateStatement(), DefaultSchema.LOGIC_NAME);
         new ShardingUpdateStatementValidator().postValidate(shardingRule, sqlStatementContext, Collections.emptyList(), 
                 mock(ShardingSphereSchema.class), mock(ConfigurationProperties.class), mock(RouteContext.class));
     }
@@ -102,14 +102,14 @@ public final class ShardingUpdateStatementValidatorTest {
     @Test
     public void assertPostValidateWhenUpdateShardingColumnWithSameRouteContext() {
         mockShardingRuleForUpdateShardingColumn();
-        new ShardingUpdateStatementValidator().postValidate(shardingRule, new UpdateStatementContext(createUpdateStatement(), DefaultSchema.LOGIC_NAME),
+        new ShardingUpdateStatementValidator().postValidate(shardingRule, new UpdateStatementContext(null, null, createUpdateStatement(), DefaultSchema.LOGIC_NAME),
                 Collections.emptyList(), mock(ShardingSphereSchema.class), mock(ConfigurationProperties.class), createSingleRouteContext());
     }
     
     @Test(expected = ShardingSphereException.class)
     public void assertPostValidateWhenUpdateShardingColumnWithDifferentRouteContext() {
         mockShardingRuleForUpdateShardingColumn();
-        new ShardingUpdateStatementValidator().postValidate(shardingRule, new UpdateStatementContext(createUpdateStatement(), DefaultSchema.LOGIC_NAME), 
+        new ShardingUpdateStatementValidator().postValidate(shardingRule, new UpdateStatementContext(null, null, createUpdateStatement(), DefaultSchema.LOGIC_NAME), 
                 Collections.emptyList(), mock(ShardingSphereSchema.class), mock(ConfigurationProperties.class), createFullRouteContext());
     }
     

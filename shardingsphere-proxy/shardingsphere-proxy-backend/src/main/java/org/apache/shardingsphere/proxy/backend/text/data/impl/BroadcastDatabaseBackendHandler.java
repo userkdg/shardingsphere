@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.proxy.backend.text.data.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngineFactory;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
  * Backend handler for broadcast.
  */
 @RequiredArgsConstructor
+@Slf4j
 public final class BroadcastDatabaseBackendHandler implements DatabaseBackendHandler {
     
     private final DatabaseCommunicationEngineFactory databaseCommunicationEngineFactory = DatabaseCommunicationEngineFactory.getInstance();

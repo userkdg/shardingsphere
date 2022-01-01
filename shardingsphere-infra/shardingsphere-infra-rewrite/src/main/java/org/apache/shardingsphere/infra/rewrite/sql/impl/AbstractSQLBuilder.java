@@ -23,6 +23,7 @@ import org.apache.shardingsphere.infra.rewrite.sql.SQLBuilder;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.SQLToken;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.Substitutable;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.ComposableSQLToken;
+import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.SubstitutableColumnNameToken;
 
 import java.util.Collections;
 

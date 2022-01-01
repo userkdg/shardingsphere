@@ -43,7 +43,11 @@ import java.util.Optional;
 public abstract class SelectStatement extends AbstractSQLStatement implements DMLStatement {
     
     private ProjectionsSegment projections;
-    
+
+    public void setProjections(ProjectionsSegment projections) {
+        this.projections = projections;
+    }
+
     private TableSegment from;
     
     private WhereSegment where;

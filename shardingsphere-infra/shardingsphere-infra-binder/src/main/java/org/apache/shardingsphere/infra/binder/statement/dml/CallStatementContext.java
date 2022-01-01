@@ -20,18 +20,30 @@ package org.apache.shardingsphere.infra.binder.statement.dml;
 import lombok.Getter;
 import org.apache.shardingsphere.infra.binder.statement.CommonSQLStatementContext;
 import org.apache.shardingsphere.infra.binder.type.SchemaAvailable;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.CallStatement;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Call statement context.
  */
 @Getter
 public final class CallStatementContext extends CommonSQLStatementContext<CallStatement> implements SchemaAvailable {
-    
+
     private final String schemaName;
-    
-    public CallStatementContext(final CallStatement sqlStatement, final String schemaName) {
+
+
+    private final Map<String, ShardingSphereMetaData> metaDataMap;
+
+    private final List<Object> parameters;
+
+
+    public CallStatementContext(Map<String, ShardingSphereMetaData> metaDataMap, List<Object> parameters, final CallStatement sqlStatement, final String schemaName) {
         super(sqlStatement);
         this.schemaName = schemaName;
+        this.metaDataMap = metaDataMap;
+        this.parameters= parameters;
     }
 }
