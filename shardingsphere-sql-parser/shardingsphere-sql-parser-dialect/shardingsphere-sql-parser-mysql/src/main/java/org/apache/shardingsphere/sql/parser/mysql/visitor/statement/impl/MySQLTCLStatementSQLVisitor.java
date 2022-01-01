@@ -63,7 +63,7 @@ public final class MySQLTCLStatementSQLVisitor extends MySQLStatementSQLVisitor 
         if (null != ctx.transactionCharacteristics().transactionAccessMode()) {
             result.setAccessMode(ctx.transactionCharacteristics().transactionAccessMode().getText());
         }
-        return new MySQLSetTransactionStatement();
+        return result;
     }
     
     @Override

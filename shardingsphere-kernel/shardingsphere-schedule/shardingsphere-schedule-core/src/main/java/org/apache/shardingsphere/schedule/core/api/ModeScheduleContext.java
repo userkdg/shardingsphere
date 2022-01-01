@@ -85,7 +85,7 @@ public final class ModeScheduleContext {
             zkConfig.setSessionTimeoutMilliseconds(70000);
             zkConfig.setBaseSleepTimeMilliseconds(1000);
             CoordinatorRegistryCenter result = new ZookeeperRegistryCenter(zkConfig);
-            result.init();
+//            result.init();
             return result;
         }
         log.warn("Unsupported clusterType '{}'", clusterType);

@@ -27,11 +27,7 @@ import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.Substituta
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.InsertColumnsSegment;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Insert cipher column name token generator.

@@ -380,18 +380,30 @@ public final class MySQLDDLStatementSQLVisitor extends MySQLStatementSQLVisitor 
     
     private ModifyColumnDefinitionSegment generateModifyColumnDefinitionSegment(final ModifyColumnContext ctx) {
         ColumnSegment column = new ColumnSegment(ctx.columnInternalRef.start.getStartIndex(), ctx.columnInternalRef.stop.getStopIndex(), (IdentifierValue) visit(ctx.columnInternalRef));
-        ModifyColumnDefinitionSegment modifyColumnDefinition = new ModifyColumnDefinitionSegment(
+        ModifyColumnDefinitionSegment result = new ModifyColumnDefinitionSegment(
                 ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), generateColumnDefinitionSegment(column, ctx.fieldDefinition()));
+        MySQLStatementParser.IdentifierContext identifier = ctx.identifier();
+        IdentifierValue preColName = (IdentifierValue)visit(identifier);
+        ColumnSegment preColSegment = new ColumnSegment(identifier.getStart().getStartIndex(), identifier.getStop().getStopIndex(), preColName);
+        result.setPreviousColumnDefinition(preColSegment);
         if (null != ctx.place()) {
-            modifyColumnDefinition.setColumnPosition((ColumnPositionSegment) visit(ctx.place()));
+            result.setColumnPosition((ColumnPositionSegment) visit(ctx.place()));
         }
-        return modifyColumnDefinition;
+        return result;
     }
     
-    private ChangeColumnDefinitionSegment generateModifyColumnDefinitionSegment(final ChangeColumnContext ctx) {
-        ChangeColumnDefinitionSegment result = new ChangeColumnDefinitionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (ColumnDefinitionSegment) visit(ctx.columnDefinition()));
-        result.setPreviousColumn(new ColumnSegment(ctx.columnInternalRef.getStart().getStartIndex(), ctx.columnInternalRef.getStop().getStopIndex(),
-                new IdentifierValue(ctx.columnInternalRef.getText())));
+    private ModifyColumnDefinitionSegment generateModifyColumnDefinitionSegment(final ChangeColumnContext ctx) {
+        ColumnDefinitionSegment columnDefinition = (ColumnDefinitionSegment) visit(ctx.columnDefinition());
+        columnDefinition.setColumnName(new ColumnSegment(
+                columnDefinition.getColumnName().getStartIndex(),
+                columnDefinition.getColumnName().getStopIndex(),
+                new IdentifierValue(ctx.columnInternalRef.getText())
+        ));
+        ModifyColumnDefinitionSegment result = new ModifyColumnDefinitionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (ColumnDefinitionSegment) visit(ctx.columnDefinition()));
+        MySQLStatementParser.IdentifierContext identifier = ctx.identifier();
+        IdentifierValue preColName = (IdentifierValue)visit(identifier);
+        ColumnSegment preColSegment = new ColumnSegment(identifier.getStart().getStartIndex(), identifier.getStop().getStopIndex(), preColName);
+        result.setPreviousColumnDefinition(preColSegment);
         if (null != ctx.place()) {
             result.setColumnPosition((ColumnPositionSegment) visit(ctx.place()));
         }

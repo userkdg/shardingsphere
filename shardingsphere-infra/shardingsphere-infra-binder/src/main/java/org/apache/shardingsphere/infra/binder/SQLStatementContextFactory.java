@@ -52,6 +52,7 @@ import org.apache.shardingsphere.infra.binder.statement.dml.DeleteStatementConte
 import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.UpdateStatementContext;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.AnalyzeTableStatement;
@@ -108,8 +109,13 @@ public final class SQLStatementContextFactory {
      * @param defaultSchemaName default schema name
      * @return SQL statement context
      */
-    public static SQLStatementContext<?> newInstance(final Map<String, ShardingSphereMetaData> metaDataMap, final List<Object> parameters, 
+    public static SQLStatementContext<?> newInstance(final Map<String, ShardingSphereMetaData> metaDataMap, final List<Object> parameters,
                                                      final SQLStatement sqlStatement, final String defaultSchemaName) {
+        return newInstance(metaDataMap, parameters, sqlStatement, null, defaultSchemaName);
+    }
+
+    public static SQLStatementContext<?> newInstance(final Map<String, ShardingSphereMetaData> metaDataMap, final List<Object> parameters,
+                                                     final SQLStatement sqlStatement, final DatabaseType databaseType, final String defaultSchemaName) {
         if (sqlStatement instanceof DMLStatement) {
             return getDMLStatementContext(metaDataMap, parameters, (DMLStatement) sqlStatement, defaultSchemaName);
         }
@@ -122,7 +128,7 @@ public final class SQLStatementContextFactory {
         if (sqlStatement instanceof DALStatement) {
             return getDALStatementContext((DALStatement) sqlStatement);
         }
-        return new CommonSQLStatementContext<>(sqlStatement);
+        return new CommonSQLStatementContext<>(sqlStatement, databaseType);
     }
     
     private static SQLStatementContext<?> getDMLStatementContext(final Map<String, ShardingSphereMetaData> metaDataMap, final List<Object> parameters, 

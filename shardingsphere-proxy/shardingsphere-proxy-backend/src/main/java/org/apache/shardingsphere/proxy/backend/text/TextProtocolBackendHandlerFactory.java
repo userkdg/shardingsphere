@@ -20,6 +20,7 @@ package org.apache.shardingsphere.proxy.backend.text;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.distsql.parser.statement.DistSQLStatement;
 import org.apache.shardingsphere.infra.binder.SQLStatementContextFactory;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
@@ -62,6 +63,7 @@ import java.util.function.Supplier;
  * Text protocol backend handler factory.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public final class TextProtocolBackendHandlerFactory {
     
     static {
@@ -89,6 +91,10 @@ public final class TextProtocolBackendHandlerFactory {
             Optional<SQLParserRule> sqlParserRule = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getGlobalRuleMetaData().findSingleRule(SQLParserRule.class);
             return new ShardingSphereSQLParserEngine(getBackendDatabaseType(databaseType, connectionSession).getName(), sqlParserRule.orElse(null)).parse(sql, false);
         });
+        if (sqlStatement == null) {
+            log.error("sql={}, but sqlStatement is null, proxy skip !!", sql);
+            return new SkipBackendHandler(new EmptyStatement());
+        }
         checkUnsupportedSQLStatement(sqlStatement);
         if (sqlStatement instanceof DistSQLStatement) {
             return DistSQLBackendHandlerFactory.newInstance(databaseType, (DistSQLStatement) sqlStatement, connectionSession);

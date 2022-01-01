@@ -18,8 +18,10 @@
 package org.apache.shardingsphere.proxy.backend.communication;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.binder.LogicSQL;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.dal.ExplainStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.context.kernel.KernelProcessor;
@@ -80,6 +82,7 @@ import java.util.stream.Collectors;
  * Database communication engine.
  */
 @RequiredArgsConstructor
+@Slf4j
 public final class DatabaseCommunicationEngine {
     
     private final String driverType;
@@ -206,7 +209,12 @@ public final class DatabaseCommunicationEngine {
     
     private QueryResponseHeader processExecuteQuery(final ExecutionContext executionContext, final List<QueryResult> queryResults, final QueryResult queryResultSample) throws SQLException {
         queryHeaders = createQueryHeaders(executionContext, queryResultSample);
-        mergedResult = mergeQuery(executionContext.getSqlStatementContext(), queryResults);
+        if (executionContext.getSqlStatementContext() instanceof ExplainStatementContext){
+            log.info("ExplainStatementContext={}, set mergedResult null", executionContext.getSqlStatementContext());
+            mergedResult = null;
+        } else {
+            mergedResult = mergeQuery(executionContext.getSqlStatementContext(), queryResults);
+        }
         return new QueryResponseHeader(queryHeaders);
     }
     

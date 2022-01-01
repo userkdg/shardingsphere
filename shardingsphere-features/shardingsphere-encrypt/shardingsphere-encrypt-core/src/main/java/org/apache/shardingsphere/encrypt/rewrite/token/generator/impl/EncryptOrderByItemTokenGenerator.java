@@ -29,15 +29,17 @@ import org.apache.shardingsphere.infra.rewrite.sql.token.generator.CollectionSQL
 import org.apache.shardingsphere.infra.rewrite.sql.token.generator.aware.SchemaMetaDataAware;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.SubstitutableColumnNameToken;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExistsSubqueryExpression;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.InExpression;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubqueryExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubquerySegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.ColumnOrderByItemSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.OrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -51,7 +53,8 @@ public final class EncryptOrderByItemTokenGenerator extends BaseEncryptSQLTokenG
     @SuppressWarnings("rawtypes")
     @Override
     protected boolean isGenerateSQLTokenForEncrypt(final SQLStatementContext sqlStatementContext) {
-        return sqlStatementContext instanceof SelectStatementContext && getColumnSegments(sqlStatementContext).size() > 0;
+        return sqlStatementContext instanceof SelectStatementContext && getColumnSegments(sqlStatementContext).size() > 0
+                && !((SelectStatementContext) sqlStatementContext).getAllTables().isEmpty();
     }
     
     @SuppressWarnings("rawtypes")
@@ -98,10 +101,54 @@ public final class EncryptOrderByItemTokenGenerator extends BaseEncryptSQLTokenG
     private Collection<OrderByItemSegment> getColumnSegments(final SQLStatementContext<?> sqlStatementContext) {
         Collection<OrderByItemSegment> result = new LinkedList<>();
         if (sqlStatementContext instanceof SelectStatementContext) {
+            List<SelectStatementContext> contexts = new LinkedList<>();
+            contexts.add((SelectStatementContext) sqlStatementContext);
+            contexts.addAll(((SelectStatementContext) sqlStatementContext).getSubqueryContexts().values());
             Collection<OrderByItem> orderByItemList = new LinkedList<>();
-            orderByItemList.addAll(((SelectStatementContext) sqlStatementContext).getOrderByContext().getItems());
-            orderByItemList.addAll(((SelectStatementContext) sqlStatementContext).getGroupByContext().getItems());
+            for (SelectStatementContext selectStatementContext : contexts) {
+                if (!selectStatementContext.getOrderByContext().isGenerated()) {
+                    orderByItemList.addAll(selectStatementContext.getOrderByContext().getItems());
+                }
+                orderByItemList.addAll(selectStatementContext.getGroupByContext().getItems());
+            }
             result.addAll(orderByItemList.stream().map(each -> each.getSegment()).collect(Collectors.toList()));
+            // 找复杂表达式查询
+            contexts.forEach(selectStatementContext -> {
+                selectStatementContext.getWhere()
+                        .map(WhereSegment::getExpr)
+                        .filter(e -> e instanceof InExpression)
+                        .map(e -> (InExpression) e)
+                        .filter(e -> e.getRight() instanceof SubqueryExpressionSegment)
+                        .map(e -> (SubqueryExpressionSegment)e.getRight())
+                        .ifPresent(e -> {
+                            SubquerySegment subquery = e.getSubquery();
+                            SelectStatement select = subquery.getSelect();
+                            select.getOrderBy().ifPresent(o -> result.addAll(o.getOrderByItems()));
+                            select.getGroupBy().ifPresent(o -> result.addAll(o.getGroupByItems()));
+                        });
+                selectStatementContext.getWhere()
+                        .map(WhereSegment::getExpr)
+                        .filter(e -> e instanceof BinaryOperationExpression)
+                        .map(e -> (BinaryOperationExpression) e)
+                        .filter(e -> e.getRight() instanceof SubqueryExpressionSegment)
+                        .map(e -> (SubqueryExpressionSegment)e.getRight())
+                        .ifPresent(e -> {
+                            SubquerySegment subquery = e.getSubquery();
+                            SelectStatement select = subquery.getSelect();
+                            select.getOrderBy().ifPresent(o -> result.addAll(o.getOrderByItems()));
+                            select.getGroupBy().ifPresent(o -> result.addAll(o.getGroupByItems()));
+                        });
+                selectStatementContext.getWhere()
+                        .map(WhereSegment::getExpr)
+                        .filter(e -> e instanceof ExistsSubqueryExpression)
+                        .map(e -> (ExistsSubqueryExpression) e)
+                        .ifPresent(e -> {
+                            SubquerySegment subquery = e.getSubquery();
+                            SelectStatement select = subquery.getSelect();
+                            select.getOrderBy().ifPresent(o -> result.addAll(o.getOrderByItems()));
+                            select.getGroupBy().ifPresent(o -> result.addAll(o.getGroupByItems()));
+                        });
+            });
         }
         return result;
     }

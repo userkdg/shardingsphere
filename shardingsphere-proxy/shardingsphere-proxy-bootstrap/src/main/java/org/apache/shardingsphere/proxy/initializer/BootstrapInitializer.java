@@ -65,7 +65,7 @@ public final class BootstrapInitializer {
         ModeConfiguration modeConfig = null == yamlConfig.getServerConfiguration().getMode()
                 ? null : new ModeConfigurationYamlSwapper().swapToObject(yamlConfig.getServerConfiguration().getMode());
         initContext(yamlConfig, modeConfig, port);
-        initRuleAlteredJobWorker(modeConfig);
+//        initRuleAlteredJobWorker(modeConfig);
         setDatabaseServerInfo();
     }
     

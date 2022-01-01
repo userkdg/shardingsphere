@@ -29,20 +29,18 @@ import org.apache.shardingsphere.infra.rewrite.sql.token.generator.CollectionSQL
 import org.apache.shardingsphere.infra.rewrite.sql.token.generator.aware.SchemaMetaDataAware;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.SubstitutableColumnNameToken;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExistsSubqueryExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.AndPredicate;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.util.ColumnExtractor;
 import org.apache.shardingsphere.sql.parser.sql.common.util.ExpressionExtractUtil;
 import org.apache.shardingsphere.sql.parser.sql.common.util.WhereExtractUtil;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -58,14 +56,18 @@ public final class EncryptPredicateColumnTokenGenerator extends BaseEncryptSQLTo
     protected boolean isGenerateSQLTokenForEncrypt(final SQLStatementContext sqlStatementContext) {
         boolean containsJoinQuery = sqlStatementContext instanceof SelectStatementContext && ((SelectStatementContext) sqlStatementContext).isContainsJoinQuery();
         boolean containsSubquery = sqlStatementContext instanceof SelectStatementContext && ((SelectStatementContext) sqlStatementContext).isContainsSubquery();
-        return containsJoinQuery || containsSubquery || (sqlStatementContext instanceof WhereAvailable && ((WhereAvailable) sqlStatementContext).getWhere().isPresent());
+        boolean hadWhereSegement = sqlStatementContext instanceof WhereAvailable && ((WhereAvailable) sqlStatementContext).getWhere().isPresent();
+        return containsJoinQuery || containsSubquery || hadWhereSegement;
     }
     
     @SuppressWarnings("rawtypes")
     @Override
     public Collection<SubstitutableColumnNameToken> generateSQLTokens(final SQLStatementContext sqlStatementContext) {
         Collection<SubstitutableColumnNameToken> result = new LinkedHashSet<>();
-        for (WhereSegment each : getWhereSegments(sqlStatementContext)) {
+        // 先拿到所有context
+        List<SQLStatementContext<?>> statementContexts = getAllSqlStatementContexts(sqlStatementContext);
+        List<WhereSegment> whereSegments = statementContexts.stream().flatMap(c -> getWhereSegments(c).stream()).collect(Collectors.toList());
+        for (WhereSegment each : whereSegments) {
             Collection<AndPredicate> andPredicates = ExpressionExtractUtil.getAndPredicates(each.getExpr());
             Map<String, String> columnTableNames = getColumnTableNames(sqlStatementContext, andPredicates);
             for (AndPredicate predicate : andPredicates) {
@@ -73,6 +75,16 @@ public final class EncryptPredicateColumnTokenGenerator extends BaseEncryptSQLTo
             }
         }
         return result;
+    }
+
+    private List<SQLStatementContext<?>> getAllSqlStatementContexts(SQLStatementContext<?> sqlStatementContext) {
+        List<SQLStatementContext<?>> sqlStatementContexts = new ArrayList<>();
+        sqlStatementContexts.add(sqlStatementContext);
+        if (sqlStatementContext instanceof SelectStatementContext) {
+            Collection<SelectStatementContext> subContexts = ((SelectStatementContext)sqlStatementContext).getSubqueryContexts().values();
+            sqlStatementContexts.addAll(subContexts);
+        }
+        return sqlStatementContexts;
     }
 
     private Collection<SubstitutableColumnNameToken> generateSQLTokens(final Collection<ExpressionSegment> predicates, final Map<String, String> columnTableNames) {
@@ -84,20 +96,22 @@ public final class EncryptPredicateColumnTokenGenerator extends BaseEncryptSQLTo
                 if (!encryptTable.isPresent() || !encryptTable.get().findEncryptorName(column.getIdentifier().getValue()).isPresent()) {
                     continue;
                 }
-                int startIndex = column.getOwner().isPresent() ? column.getOwner().get().getStopIndex() + 2 : column.getStartIndex();
+                int startIndex = column.getStartIndex();
+//                int startIndex = column.getOwner().isPresent() ? column.getOwner().get().getStopIndex() : column.getStartIndex();
                 int stopIndex = column.getStopIndex();
                 boolean queryWithCipherColumn = getEncryptRule().isQueryWithCipherColumn(tableName.orElse(""));
+                String owner = column.getOwner().map(OwnerSegment::getIdentifier).map(IdentifierValue::getValue).orElse(null);
                 if (!queryWithCipherColumn) {
                     Optional<String> plainColumn = encryptTable.get().findPlainColumn(column.getIdentifier().getValue());
                     if (plainColumn.isPresent()) {
-                        result.add(new SubstitutableColumnNameToken(startIndex, stopIndex, getColumnProjections(plainColumn.get())));
+                        result.add(new SubstitutableColumnNameToken(startIndex, stopIndex, getColumnProjections(owner,plainColumn.get(),null)));
                         continue;
                     }
                 }
                 Optional<String> assistedQueryColumn = encryptTable.get().findAssistedQueryColumn(column.getIdentifier().getValue());
                 SubstitutableColumnNameToken encryptColumnNameToken = assistedQueryColumn.map(columnName
-                    -> new SubstitutableColumnNameToken(startIndex, stopIndex, getColumnProjections(columnName))).orElseGet(()
-                        -> new SubstitutableColumnNameToken(startIndex, stopIndex, getColumnProjections(encryptTable.get().getCipherColumn(column.getIdentifier().getValue()))));
+                    -> new SubstitutableColumnNameToken(startIndex, stopIndex, getColumnProjections(owner,columnName, null))).orElseGet(()
+                        -> new SubstitutableColumnNameToken(startIndex, stopIndex, getColumnProjections(owner, encryptTable.get().getCipherColumn(column.getIdentifier().getValue()), null)));
                 result.add(encryptColumnNameToken);
             }
         }
@@ -111,7 +125,7 @@ public final class EncryptPredicateColumnTokenGenerator extends BaseEncryptSQLTo
             result.addAll(WhereExtractUtil.getJoinWhereSegments((SelectStatement) sqlStatementContext.getSqlStatement()));
         }
         if (sqlStatementContext instanceof WhereAvailable) {
-            ((WhereAvailable) sqlStatementContext).getWhere().ifPresent(result::add);
+            ((WhereAvailable) sqlStatementContext).getWhere().filter(w -> !(w.getExpr() instanceof ExistsSubqueryExpression)).ifPresent(result::add);
         }
         return result;
     }
@@ -131,7 +145,7 @@ public final class EncryptPredicateColumnTokenGenerator extends BaseEncryptSQLTo
         return Optional.ofNullable(columnTableNames.get(column.getExpression()));
     }
     
-    private Collection<ColumnProjection> getColumnProjections(final String columnName) {
-        return Collections.singletonList(new ColumnProjection(null, columnName, null));
+    private Collection<ColumnProjection> getColumnProjections(String owner, String columnName, final String alias) {
+        return Collections.singletonList(new ColumnProjection(owner, columnName, alias));
     }
 }

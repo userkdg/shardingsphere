@@ -21,18 +21,20 @@
 # 
 ######################################################################################################
 
-#mode:
-#  type: Cluster
-#  repository:
-#    type: ZooKeeper
-#    props:
-#      namespace: governance_ds
-#      server-lists: localhost:2181
-#      retryIntervalMilliseconds: 500
-#      timeToLiveSeconds: 60
-#      maxRetries: 3
-#      operationTimeoutMilliseconds: 500
-#  overwrite: false
+mode:
+  type: Cluster
+  repository:
+    type: ZooKeeper
+    props:
+      namespace: data_security_ns
+#      server-lists: 192.168.243.34:12181
+      server-lists: 192.168.243.20:12181,192.168.243.21:12181,192.168.243.22:12181
+      retryIntervalMilliseconds: 10000
+      timeToLiveSeconds: 60
+      maxRetries: 3
+      operationTimeoutMilliseconds: 70000
+  overwrite: false
+
 #
 #rules:
 #  - !AUTHORITY

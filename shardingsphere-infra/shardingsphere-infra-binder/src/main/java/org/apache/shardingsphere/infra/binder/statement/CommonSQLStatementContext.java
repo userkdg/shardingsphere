@@ -48,15 +48,22 @@ public class CommonSQLStatementContext<T extends SQLStatement> implements SQLSta
     private final DatabaseType databaseType;
     
     private final SQLHintExtractor sqlHintExtractor;
-    
+
     public CommonSQLStatementContext(final T sqlStatement) {
+        this(sqlStatement, null);
+    }
+
+    public CommonSQLStatementContext(final T sqlStatement, final DatabaseType dbType) {
         this.sqlStatement = sqlStatement;
         tablesContext = new TablesContext(Collections.emptyList());
-        databaseType = getDatabaseType(sqlStatement);
+        databaseType = (sqlStatement == null && dbType != null) ? dbType : getDatabaseType(sqlStatement);
         sqlHintExtractor = new SQLHintExtractor(sqlStatement);
     }
     
     private DatabaseType getDatabaseType(final SQLStatement sqlStatement) {
+        if (sqlStatement == null) {
+            return null;
+        }
         if (sqlStatement instanceof MySQLStatement) {
             return DatabaseTypeRegistry.getActualDatabaseType("MySQL");
         }

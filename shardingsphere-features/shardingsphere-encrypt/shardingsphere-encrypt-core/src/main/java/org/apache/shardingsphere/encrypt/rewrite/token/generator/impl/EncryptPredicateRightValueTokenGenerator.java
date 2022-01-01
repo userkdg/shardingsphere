@@ -25,6 +25,7 @@ import org.apache.shardingsphere.encrypt.rewrite.token.generator.BaseEncryptSQLT
 import org.apache.shardingsphere.encrypt.rewrite.token.pojo.EncryptPredicateEqualRightValueToken;
 import org.apache.shardingsphere.encrypt.rewrite.token.pojo.EncryptPredicateInRightValueToken;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.util.DMLStatementContextHelper;
 import org.apache.shardingsphere.infra.binder.type.WhereAvailable;
 import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
@@ -33,13 +34,7 @@ import org.apache.shardingsphere.infra.rewrite.sql.token.generator.aware.Paramet
 import org.apache.shardingsphere.infra.rewrite.sql.token.generator.aware.SchemaMetaDataAware;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.SQLToken;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Predicate right value token generator for encrypt.
@@ -53,7 +48,12 @@ public final class EncryptPredicateRightValueTokenGenerator extends BaseEncryptS
     
     @Override
     protected boolean isGenerateSQLTokenForEncrypt(final SQLStatementContext sqlStatementContext) {
-        return sqlStatementContext instanceof WhereAvailable && ((WhereAvailable) sqlStatementContext).getWhere().isPresent();
+        boolean condition1 = sqlStatementContext instanceof WhereAvailable && ((WhereAvailable) sqlStatementContext).getWhere().isPresent();
+        if (condition1) return true;
+        boolean condition2 = sqlStatementContext instanceof SelectStatementContext &&
+                ((SelectStatementContext) sqlStatementContext).getSubqueryContexts().values().stream().anyMatch(s->s.getWhere().isPresent());
+        if (condition2) return true;
+        return false;
     }
     
     @Override

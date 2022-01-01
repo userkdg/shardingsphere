@@ -19,6 +19,7 @@ package org.apache.shardingsphere.proxy.backend.text.data;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.BroadcastDatabaseBackendHandler;
@@ -34,6 +35,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectState
  * Database backend handler factory.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public final class DatabaseBackendHandlerFactory {
     
     /**
@@ -47,7 +49,8 @@ public final class DatabaseBackendHandlerFactory {
     public static DatabaseBackendHandler newInstance(final SQLStatementContext<?> sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
         SQLStatement sqlStatement = sqlStatementContext.getSqlStatement();
         if (sqlStatement instanceof SetStatement || sqlStatement instanceof DCLStatement) {
-            return new BroadcastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
+            log.warn("sqlStatement ={}, sql={} only Broadcast on current schema.", sqlStatement, sql);
+            return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
         }
         if (sqlStatement instanceof DALStatement || (sqlStatement instanceof SelectStatement && null == ((SelectStatement) sqlStatement).getFrom())) {
             return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
