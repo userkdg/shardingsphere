@@ -209,11 +209,11 @@ public final class DatabaseCommunicationEngine {
     
     private QueryResponseHeader processExecuteQuery(final ExecutionContext executionContext, final List<QueryResult> queryResults, final QueryResult queryResultSample) throws SQLException {
         queryHeaders = createQueryHeaders(executionContext, queryResultSample);
-        if (executionContext.getSqlStatementContext() instanceof ExplainStatementContext){
-            log.info("ExplainStatementContext={}, set mergedResult null", executionContext.getSqlStatementContext());
-            mergedResult = null;
-        } else {
+        try {
             mergedResult = mergeQuery(executionContext.getSqlStatementContext(), queryResults);
+        } catch (SQLException e) {
+            mergedResult = null;
+            log.info("StatementContext={}, set mergedResult null", executionContext.getSqlStatementContext(), e);
         }
         return new QueryResponseHeader(queryHeaders);
     }
