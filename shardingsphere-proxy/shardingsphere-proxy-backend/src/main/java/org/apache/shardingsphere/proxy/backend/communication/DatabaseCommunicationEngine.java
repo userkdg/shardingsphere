@@ -211,7 +211,7 @@ public final class DatabaseCommunicationEngine {
         queryHeaders = createQueryHeaders(executionContext, queryResultSample);
         try {
             mergedResult = mergeQuery(executionContext.getSqlStatementContext(), queryResults);
-        } catch (SQLException e) {
+        } catch (NullPointerException e) {
             mergedResult = null;
             log.info("StatementContext={}, set mergedResult null", executionContext.getSqlStatementContext(), e);
         }
