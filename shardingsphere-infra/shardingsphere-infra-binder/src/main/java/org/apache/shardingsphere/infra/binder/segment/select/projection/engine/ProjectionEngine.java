@@ -71,7 +71,19 @@ public final class ProjectionEngine {
      */
     public Optional<Projection> createProjection(final TableSegment table, final ProjectionSegment projectionSegment) {
         if (projectionSegment instanceof ShorthandProjectionSegment) {
-            return Optional.of(createProjection(table, (ShorthandProjectionSegment) projectionSegment));
+            final ShorthandProjection shorthandProjection = createProjection(table, (ShorthandProjectionSegment) projectionSegment);
+            final ShorthandProjection actualShorthandProjection = shorthandProjection.getOwner().map(owner -> {
+                List<ColumnProjection> actProjections = new LinkedList<>();
+                for (Map.Entry<String, ColumnProjection> entry : shorthandProjection.getActualColumns().entrySet()) {
+                    ColumnProjection p = entry.getValue();
+                    if (owner.equalsIgnoreCase(p.getOwner())) {
+                        actProjections.add(p);
+                    }
+                }
+                return new ShorthandProjection(owner, actProjections);
+            }).orElse(shorthandProjection);
+            // 过滤掉非当前shorthand的projection
+            return Optional.of(actualShorthandProjection);
         }
         if (projectionSegment instanceof ColumnProjectionSegment) {
             return Optional.of(createProjection((ColumnProjectionSegment) projectionSegment));
