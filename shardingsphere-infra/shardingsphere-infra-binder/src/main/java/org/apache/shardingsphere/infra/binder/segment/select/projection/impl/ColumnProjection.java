@@ -17,10 +17,7 @@
 
 package org.apache.shardingsphere.infra.binder.segment.select.projection.impl;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
 
 import java.util.Optional;
@@ -39,6 +36,9 @@ public final class ColumnProjection implements Projection {
     private final String name;
     
     private final String alias;
+
+    @Setter
+    private Boolean subqueryProjectionEqual = Boolean.FALSE;
     
     @Override
     public String getExpression() {

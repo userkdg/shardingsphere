@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.encrypt.rewrite.token.generator.impl;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import lombok.Setter;
 import org.apache.shardingsphere.encrypt.rewrite.token.generator.BaseEncryptSQLTokenGenerator;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
@@ -44,6 +45,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.Whe
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Projection token generator for encrypt.
@@ -80,6 +82,8 @@ public final class EncryptProjectionTokenGenerator extends BaseEncryptSQLTokenGe
         if (projection instanceof ColumnProjectionSegment) {
             ColumnProjectionSegment columnSegment = (ColumnProjectionSegment) projection;
             ColumnProjection columnProjection = buildColumnProjection(columnSegment);
+            List<Projection> subQueryContextAllProjections = getTableSubQueryContextAllProjections(selectStatementContext.getSubqueryContexts());
+            columnProjection.setSubqueryProjectionEqual(findSubQueryProjectionEqual(subQueryContextAllProjections, columnProjection));
             String tableName = columnTableNames.get(columnProjection.getExpression());
             if (null != tableName && getEncryptRule().findEncryptor(tableName, columnProjection.getName()).isPresent()) {
                 result.add(generateSQLTokens(tableName, columnSegment, columnProjection, subqueryType));
@@ -87,7 +91,11 @@ public final class EncryptProjectionTokenGenerator extends BaseEncryptSQLTokenGe
         }
         if (projection instanceof ShorthandProjectionSegment) {
             ShorthandProjectionSegment shorthandSegment = (ShorthandProjectionSegment) projection;
-            Collection<ColumnProjection> actualColumns = getShorthandProjection(shorthandSegment, selectStatementContext.getProjectionsContext()).getActualColumns().values();
+            Collection<ColumnProjection> actualColumns = getShorthandProjection(shorthandSegment, selectStatementContext.getProjectionsContext(), selectStatementContext.getSubqueryContexts()).getActualColumns().values();
+            List<Projection> subQueryContextAllProjections = getTableSubQueryContextAllProjections(selectStatementContext.getSubqueryContexts());
+            for (ColumnProjection columnProjection : actualColumns) {
+                columnProjection.setSubqueryProjectionEqual(findSubQueryProjectionEqual(subQueryContextAllProjections, columnProjection));
+            }
             if (!actualColumns.isEmpty()) {
                 result.add(generateSQLTokens(shorthandSegment, actualColumns, selectStatementContext.getDatabaseType(), subqueryType, columnTableNames));
             }
@@ -188,12 +196,27 @@ public final class EncryptProjectionTokenGenerator extends BaseEncryptSQLTokenGe
         Optional<String> assistedQueryColumn = getEncryptRule().findAssistedQueryColumn(tableName, column.getName());
         assistedQueryColumn.ifPresent(optional -> result.add(new ColumnProjection(column.getOwner(), optional, null)));
         Optional<EncryptAlgorithm> cipherColumn = getEncryptRule().findEncryptor(tableName, column.getName());
-        cipherColumn.ifPresent(optional -> result.add(new ColumnProjection(column.getOwner(), getEncryptRule().getCipherColumn(tableName, column.getName()), column.getAlias().orElse(column.getName()))));
+        if (Boolean.TRUE.equals(column.getSubqueryProjectionEqual() && cipherColumn.isPresent())){
+            String actualAlias = column.getAlias().map(alias -> {
+                if (!alias.equals(column.getName())) return alias;
+                return null;
+            }).orElse(null);
+            result.add(new ColumnProjection(column.getOwner(), column.getName(), actualAlias));
+        }else{
+            cipherColumn.ifPresent(optional -> result.add(new ColumnProjection(column.getOwner(), getEncryptRule().getCipherColumn(tableName, column.getName()), column.getAlias().orElse(column.getName()))));
+        }
         return result;
     }
 
     private ColumnProjection generateCommonProjection(final String tableName, final ColumnProjection column, final boolean shorthand) {
         String encryptColumnName = getEncryptColumnName(tableName, column.getName());
+        if (Boolean.TRUE.equals(column.getSubqueryProjectionEqual() && !Strings.isNullOrEmpty(encryptColumnName))){
+            String actualAlias = column.getAlias().map(alias -> {
+                if (!alias.equals(column.getName())) return alias;
+                return null;
+            }).orElse(null);
+            return new ColumnProjection(column.getOwner(), column.getName(), actualAlias);
+        }
         String owner = shorthand ? column.getOwner() : null;
         return new ColumnProjection(owner, encryptColumnName, column.getAlias().orElse(column.getName()));
     }
@@ -207,9 +230,12 @@ public final class EncryptProjectionTokenGenerator extends BaseEncryptSQLTokenGe
         return getEncryptRule().getCipherColumn(tableName, logicEncryptColumnName);
     }
 
-    private ShorthandProjection getShorthandProjection(final ShorthandProjectionSegment segment, final ProjectionsContext projectionsContext) {
+    private ShorthandProjection getShorthandProjection(final ShorthandProjectionSegment segment, final ProjectionsContext projectionsContext,
+                                                       Map<Integer, SelectStatementContext> subqueryContexts) {
+        List<Projection> subQueryProjections = getTableSubQueryContextAllProjections(subqueryContexts);
         Optional<String> owner = segment.getOwner().isPresent() ? Optional.of(segment.getOwner().get().getIdentifier().getValue()) : Optional.empty();
         for (Projection each : projectionsContext.getProjections()) {
+            each.setSubqueryProjectionEqual(findSubQueryProjectionEqual(subQueryProjections, each));
             if (each instanceof ShorthandProjection) {
                 if (!owner.isPresent() && !((ShorthandProjection) each).getOwner().isPresent()) {
                     return (ShorthandProjection) each;
@@ -220,6 +246,30 @@ public final class EncryptProjectionTokenGenerator extends BaseEncryptSQLTokenGe
             }
         }
         throw new IllegalStateException(String.format("Can not find shorthand projection segment, owner is: `%s`", owner.orElse(null)));
+    }
+
+
+    /**
+     * {@link SubqueryType#TABLE_SUBQUERY}
+     */
+    private List<Projection> getTableSubQueryContextAllProjections(Map<Integer, SelectStatementContext> subqueryContexts) {
+        if (subqueryContexts == null) {
+            subqueryContexts = Collections.emptyMap();
+        }
+        List<Projection> subQueryProjections = subqueryContexts.values().stream()
+                .filter(s-> SubqueryType.TABLE_SUBQUERY.equals(s.getSubqueryType()))// 只对from (select xxx)
+                .flatMap(s -> s.getProjectionsContext().getExpandProjections().stream()).collect(Collectors.toList());
+        return subQueryProjections;
+    }
+
+    private boolean findSubQueryProjectionEqual(List<Projection> subQueryProjections, Projection each) {
+        for (Projection subQueryProjection : subQueryProjections) {
+            String columnLabel = subQueryProjection.getColumnLabel();
+            if (each.getColumnLabel().equalsIgnoreCase(columnLabel)){
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

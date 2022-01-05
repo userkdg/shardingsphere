@@ -44,4 +44,11 @@ public interface Projection {
      * @return columnLabel
      */
     String getColumnLabel();
+
+    default Boolean getSubqueryProjectionEqual() {
+        return false;
+    }
+
+    default void setSubqueryProjectionEqual(Boolean subqueryProjectionEqual){
+    }
 }
