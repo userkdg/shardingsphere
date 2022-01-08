@@ -20,28 +20,38 @@ package org.apache.shardingsphere.proxy.frontend.command;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.db.protocol.CommonConstants;
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.query.text.query.MySQLComQueryPacket;
-import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLEofPacket;
 import org.apache.shardingsphere.db.protocol.packet.CommandPacket;
 import org.apache.shardingsphere.db.protocol.packet.CommandPacketType;
 import org.apache.shardingsphere.db.protocol.packet.DatabasePacket;
 import org.apache.shardingsphere.db.protocol.payload.PacketPayload;
+import org.apache.shardingsphere.distsql.parser.statement.DistSQLStatement;
+import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
+import org.apache.shardingsphere.infra.exception.ShardingSphereException;
+import org.apache.shardingsphere.infra.parser.ShardingSphereSQLParserEngine;
+import org.apache.shardingsphere.parser.rule.SQLParserRule;
 import org.apache.shardingsphere.proxy.backend.communication.SQLStatementSchemaHolder;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.BackendConnectionException;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.frontend.command.executor.CommandExecutor;
 import org.apache.shardingsphere.proxy.frontend.command.executor.QueryCommandExecutor;
 import org.apache.shardingsphere.proxy.frontend.exception.ExpectedExceptions;
 import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.EmptyStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.util.SQLUtil;
 
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -95,27 +105,58 @@ public final class CommandExecutorTask implements Runnable {
         CommandExecuteEngine commandExecuteEngine = databaseProtocolFrontendEngine.getCommandExecuteEngine();
         CommandPacketType type = commandExecuteEngine.getCommandPacketType(payload);
         CommandPacket commandPacket = commandExecuteEngine.getCommandPacket(payload, type, connectionSession);
+        List<CommandPacket> commandPackets = handlerIfMultiSqlPacket(commandPacket);
+        if (commandPackets.isEmpty()) {
+            commandPackets.add(commandPacket);
+        }
+        boolean needFlush = false;
+        for (CommandPacket packet : commandPackets) {
+            boolean flag = singleCommandExecutor(context, commandExecuteEngine, type, packet);
+            if (!needFlush && flag){
+                needFlush = true;
+            }
+        }
+        return needFlush;
+    }
+
+    private List<CommandPacket> handlerIfMultiSqlPacket(CommandPacket commandPacket) {
+        List<CommandPacket> commandPackets = new ArrayList<>();
         if (commandPacket instanceof MySQLComQueryPacket) {
             MySQLComQueryPacket packet = (MySQLComQueryPacket) commandPacket;
-            if (packet.getSql().toLowerCase().contains("information_schema.engines")){
-                List<SQLStatement> sqlStatements = SQLUtils.parseStatements(packet.getSql(), DbType.mysql, true);
-                // 针对多sql的情况做加工
-                if (sqlStatements.size() > 1) {
-                    List<CommandPacket> commandPackets = new ArrayList<>(sqlStatements.size());
-                    for (SQLStatement sqlStatement : sqlStatements) {
-                        String sql = SQLUtils.toSQLString(sqlStatement, DbType.mysql);
-                        commandPackets.add(new MySQLComQueryPacket(sql));
-                    }
-                    List<Boolean> needFlush = new ArrayList<>();
-                    for (CommandPacket mysqlComPacket : commandPackets) {
-                        boolean flushForPerCommandPacket = singleCommandExecutor(context, commandExecuteEngine, type, mysqlComPacket);
-                        needFlush.add(flushForPerCommandPacket);
-                    }
-                    return needFlush.stream().anyMatch(Boolean.TRUE::equals);
+            final String trimSQL = SQLUtil.trimComment(packet.getSql());
+            try {
+                Optional<SQLParserRule> sqlParserRule = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getGlobalRuleMetaData().findSingleRule(SQLParserRule.class);
+                org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement shardingStatement =
+                        new ShardingSphereSQLParserEngine(new MySQLDatabaseType().getName(), sqlParserRule.orElse(null))
+                                .parse(trimSQL, false);
+                if (shardingStatement instanceof DistSQLStatement) {
+                    return commandPackets;
+                }
+            } catch (Exception e) {
+                log.error("sharding parser error ,sql={}", trimSQL, e);
+            }
+            List<SQLStatement> sqlStatements = SQLUtils.parseStatements(trimSQL, DbType.mysql, true);
+            // 针对多sql的情况做加工
+            if (sqlStatements.size() > 1000) {
+                ShardingSphereException cause = new ShardingSphereException("multi sql on one packet ,expect max size %d, actual size %d", 1000, sqlStatements.size());
+                log.error("Exception occur: ", cause);
+                throw cause;
+            }
+            Predicate<SQLStatement> crudPredicate = sqlStatement ->
+                    trimSQL.toLowerCase().contains("information_schema.engines") ||
+                    sqlStatement instanceof SQLDeleteStatement ||
+                    sqlStatement instanceof SQLUpdateStatement ||
+                    sqlStatement instanceof SQLSelectStatement ||
+                    sqlStatement instanceof SQLInsertStatement;
+            boolean allCrudStats = sqlStatements.stream().allMatch(crudPredicate);
+            if (allCrudStats && sqlStatements.size() > 1) {
+                for (SQLStatement sqlStatement : sqlStatements) {
+                    String sql = SQLUtils.toSQLString(sqlStatement, DbType.mysql);
+                    commandPackets.add(new MySQLComQueryPacket(sql));
                 }
             }
         }
-        return singleCommandExecutor(context, commandExecuteEngine, type, commandPacket);
+        return commandPackets;
     }
 
     private boolean singleCommandExecutor(ChannelHandlerContext context, CommandExecuteEngine commandExecuteEngine, CommandPacketType type, CommandPacket commandPacket) throws SQLException {
