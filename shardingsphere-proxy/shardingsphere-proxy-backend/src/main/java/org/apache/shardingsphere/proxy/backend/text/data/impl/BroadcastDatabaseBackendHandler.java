@@ -57,6 +57,7 @@ public final class BroadcastDatabaseBackendHandler implements DatabaseBackendHan
             for (String each : schemaNames) {
                 connectionSession.setCurrentSchema(each);
                 databaseCommunicationEngineFactory.newTextProtocolInstance(sqlStatementContext, sql, (JDBCBackendConnection) connectionSession.getBackendConnection()).execute();
+                log.info("originalSchema = {}, Broadcast to schema ={}, sql={}", originalSchema, each, sql);
             }
         } finally {
             connectionSession.setCurrentSchema(originalSchema);

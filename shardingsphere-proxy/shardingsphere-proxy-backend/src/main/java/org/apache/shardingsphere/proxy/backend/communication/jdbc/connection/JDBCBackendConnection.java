@@ -22,6 +22,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.db.protocol.parameter.TypeUnspecifiedSQLParameter;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
@@ -39,17 +40,8 @@ import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.spi.typed.TypedSPI;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -59,6 +51,7 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Setter
+@Slf4j
 public final class JDBCBackendConnection implements BackendConnection, ExecutorJDBCManager {
     
     static {
@@ -100,6 +93,7 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
         synchronized (cachedConnections) {
             connections = cachedConnections.get(dataSourceName);
         }
+        log.debug("connectionId={},事务内获取连接，getConnectionsWithTransaction中发现缓存connections有{}个，现需要{}个", connectionSession.getConnectionId(), connections.size(), connectionSize);
         List<Connection> result;
         if (connections.size() >= connectionSize) {
             result = new ArrayList<>(connections).subList(0, connectionSize);
@@ -132,6 +126,7 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
     private List<Connection> getConnectionsWithoutTransaction(final String dataSourceName, final int connectionSize, final ConnectionMode connectionMode) throws SQLException {
         Preconditions.checkNotNull(connectionSession.getSchemaName(), "Current schema is null.");
         List<Connection> result = ProxyContext.getInstance().getBackendDataSource().getConnections(connectionSession.getSchemaName(), dataSourceName, connectionSize, connectionMode);
+        log.debug("connectionId={},非事务内获取连接，getConnectionsWithoutTransaction直接创建新的{}个连接",connectionSession.getConnectionId(), connectionSize);
         synchronized (cachedConnections) {
             cachedConnections.putAll(dataSourceName, result);
         }

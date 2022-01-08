@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.proxy.backend.communication.jdbc.datasource;
 
 import com.google.common.base.Preconditions;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
 import org.apache.shardingsphere.proxy.backend.communication.BackendDataSource;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
@@ -37,6 +38,7 @@ import java.util.Optional;
 /**
  * Backend data source of JDBC.
  */
+@Slf4j
 public final class JDBCBackendDataSource implements BackendDataSource {
     
     /**
@@ -100,7 +102,9 @@ public final class JDBCBackendDataSource implements BackendDataSource {
     private Connection createConnection(final String schemaName, final String dataSourceName, final DataSource dataSource, final TransactionType transactionType) throws SQLException {
         ShardingSphereTransactionManager transactionManager
                 = ProxyContext.getInstance().getContextManager().getTransactionContexts().getEngines().get(schemaName).getTransactionManager(transactionType);
-        return isInTransaction(transactionManager) ? transactionManager.getConnection(dataSourceName) : dataSource.getConnection();
+        boolean inTransaction = isInTransaction(transactionManager);
+        log.debug("是否为事务内创建连接，isInTransaction(transactionManager)={}", inTransaction);
+        return inTransaction ? transactionManager.getConnection(dataSourceName) : dataSource.getConnection();
     }
     
     private boolean isInTransaction(final ShardingSphereTransactionManager transactionManager) {

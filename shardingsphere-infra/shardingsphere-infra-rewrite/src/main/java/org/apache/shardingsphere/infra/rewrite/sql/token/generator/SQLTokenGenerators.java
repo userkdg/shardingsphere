@@ -71,13 +71,13 @@ public final class SQLTokenGenerators {
             if (each instanceof OptionalSQLTokenGenerator) {
                 SQLToken sqlToken = ((OptionalSQLTokenGenerator) each).generateSQLToken(sqlStatementContext);
                 if (!result.contains(sqlToken)) {
-                    log.info("collector {} token:{}",each.getClass().getName(), sqlToken);
+                    log.debug("collector {} token:{}",each.getClass().getName(), sqlToken);
                     result.add(sqlToken);
                 }
             } else if (each instanceof CollectionSQLTokenGenerator) {
                 Collection tokens = ((CollectionSQLTokenGenerator) each).generateSQLTokens(sqlStatementContext);
                 if (!tokens.isEmpty()){
-                    log.info("collector {} token:{}",each.getClass().getName(), result);
+                    log.debug("collector {} token:{}",each.getClass().getName(), result);
                 }
                 result.addAll(tokens);
             }

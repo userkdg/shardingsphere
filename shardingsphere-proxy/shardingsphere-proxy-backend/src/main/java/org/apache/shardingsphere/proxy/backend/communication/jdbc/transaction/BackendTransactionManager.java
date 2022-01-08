@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.transaction.TransactionHolder;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
@@ -29,6 +30,7 @@ import java.sql.SQLException;
 /**
  * Backend transaction manager.
  */
+@Slf4j
 public final class BackendTransactionManager implements TransactionManager {
     
     private final JDBCBackendConnection connection;
@@ -45,6 +47,7 @@ public final class BackendTransactionManager implements TransactionManager {
         localTransactionManager = new LocalTransactionManager(backendConnection);
         ShardingSphereTransactionManagerEngine engine = ProxyContext.getInstance().getContextManager().getTransactionContexts().getEngines().get(connection.getConnectionSession().getSchemaName());
         shardingSphereTransactionManager = null == engine ? null : engine.getTransactionManager(transactionType);
+        log.debug("Backend transaction TYPE={}", transactionType);
     }
     
     @Override

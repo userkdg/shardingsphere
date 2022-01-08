@@ -124,6 +124,7 @@ public final class DatabaseCommunicationEngine {
         MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
         federationExecutor = FederationExecutorFactory.newInstance(schemaName, metaDataContexts.getOptimizerContext(), 
                 metaDataContexts.getProps(), new JDBCExecutor(BackendExecutorContext.getInstance().getExecutorEngine(), backendConnection.isSerialExecute()));
+        log.debug("driverType={},logicSQL={}", driverType, logicSQL.getSql());
     }
     
     /**

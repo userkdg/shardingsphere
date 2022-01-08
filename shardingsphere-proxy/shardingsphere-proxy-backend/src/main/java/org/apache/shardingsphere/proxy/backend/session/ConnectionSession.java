@@ -21,6 +21,7 @@ import io.netty.util.AttributeMap;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.infra.metadata.user.Grantee;
 import org.apache.shardingsphere.proxy.backend.communication.BackendConnection;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Connection session.
  */
+@Slf4j
 @Getter
 @Setter
 public final class ConnectionSession {
@@ -52,10 +54,11 @@ public final class ConnectionSession {
     private final AtomicBoolean autoCommit = new AtomicBoolean(true);
     
     private volatile BackendConnection backendConnection;
-    
+
     public ConnectionSession(final TransactionType initialTransactionType, final AttributeMap attributeMap) {
         transactionStatus = new TransactionStatus(initialTransactionType);
         this.attributeMap = attributeMap;
+        log.debug("new ConnectionSession info, transactionStatus={}, attributeMap={}", transactionStatus, attributeMap);
     }
     
     /**

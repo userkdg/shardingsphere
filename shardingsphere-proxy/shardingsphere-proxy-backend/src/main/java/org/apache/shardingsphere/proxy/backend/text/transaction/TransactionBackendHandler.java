@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.text.transaction;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction.BackendTransactionManager;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
@@ -36,6 +37,7 @@ import java.sql.SQLFeatureNotSupportedException;
 /**
  * Do transaction operation.
  */
+@Slf4j
 public final class TransactionBackendHandler implements TextProtocolBackendHandler {
     
     private final TCLStatement tclStatement;
@@ -55,6 +57,7 @@ public final class TransactionBackendHandler implements TextProtocolBackendHandl
     
     @Override
     public ResponseHeader execute() throws SQLException {
+        log.info("Do transaction operation , operationType is {}, tclStatement={}", operationType, tclStatement);
         switch (operationType) {
             case BEGIN:
                 if (tclStatement instanceof MySQLBeginTransactionStatement && connectionSession.getTransactionStatus().isInTransaction()) {

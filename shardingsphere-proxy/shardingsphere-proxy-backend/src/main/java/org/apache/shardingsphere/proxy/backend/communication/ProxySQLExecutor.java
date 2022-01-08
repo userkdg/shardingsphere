@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.communication;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
@@ -58,6 +59,7 @@ import java.util.Optional;
 /**
  * Proxy SQL Executor.
  */
+@Slf4j
 public final class ProxySQLExecutor {
     
     private final String type;
@@ -73,6 +75,7 @@ public final class ProxySQLExecutor {
         this.backendConnection = backendConnection;
         ExecutorEngine executorEngine = BackendExecutorContext.getInstance().getExecutorEngine();
         boolean isSerialExecute = backendConnection.isSerialExecute();
+        log.debug("是否串行化执行,isSerialExecute={}", isSerialExecute);
         MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
         jdbcExecutor = new ProxyJDBCExecutor(type, backendConnection.getConnectionSession(), databaseCommunicationEngine, new JDBCExecutor(executorEngine, isSerialExecute));
         rawExecutor = new RawExecutor(executorEngine, isSerialExecute, metaDataContexts.getProps());
@@ -146,6 +149,7 @@ public final class ProxySQLExecutor {
         try {
             executionGroupContext = prepareEngine.prepare(executionContext.getRouteContext(), executionContext.getExecutionUnits());
         } catch (final SQLException ex) {
+            log.error("prepareEngine.prepare , error !", ex);
             return getSaneExecuteResults(executionContext, ex);
         }
         executionGroupContext.setSchemaName(backendConnection.getConnectionSession().getSchemaName());
