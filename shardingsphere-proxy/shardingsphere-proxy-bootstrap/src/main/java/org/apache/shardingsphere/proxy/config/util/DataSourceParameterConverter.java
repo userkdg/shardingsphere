@@ -20,6 +20,7 @@ package org.apache.shardingsphere.proxy.config.util;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.config.datasource.DataSourceConfiguration;
 import org.apache.shardingsphere.infra.config.datasource.DataSourceParameter;
 import org.apache.shardingsphere.proxy.config.yaml.YamlDataSourceParameter;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
  * Data source parameter converter.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public final class DataSourceParameterConverter {
     
     /**
@@ -60,6 +62,7 @@ public final class DataSourceParameterConverter {
         if (null != yamlDataSourceParameter.getCustomPoolProps()) {
             result.setCustomPoolProps(yamlDataSourceParameter.getCustomPoolProps());
         }
+        log.info("YamlDataSourceParameter={}", result);
         return result;
     }
     
@@ -88,6 +91,7 @@ public final class DataSourceParameterConverter {
         if (null != dataSourceParameter.getCustomPoolProps()) {
             result.getCustomPoolProps().putAll(dataSourceParameter.getCustomPoolProps());
         }
+        log.info("YamlDataSourceParameter={}", result);
         return result;
     }
 }

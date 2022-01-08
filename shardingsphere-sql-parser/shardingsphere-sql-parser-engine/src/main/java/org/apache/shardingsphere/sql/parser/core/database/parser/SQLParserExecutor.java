@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.sql.parser.core.database.parser;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
@@ -32,6 +33,7 @@ import org.apache.shardingsphere.sql.parser.spi.DatabaseTypedSQLParserFacade;
 /**
  * SQL parser executor.
  */
+@Slf4j
 @RequiredArgsConstructor
 public final class SQLParserExecutor {
     
@@ -65,6 +67,7 @@ public final class SQLParserExecutor {
             try {
                 return (ParseASTNode) sqlParser.parse();
             } catch (final ParseCancellationException e) {
+                log.error("parse error or sql syntax error", e);
                 throw new SQLParsingException("You have an error in your SQL syntax");
             }
         }
