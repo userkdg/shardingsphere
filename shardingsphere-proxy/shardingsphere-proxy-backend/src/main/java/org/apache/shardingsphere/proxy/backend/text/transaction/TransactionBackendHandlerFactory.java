@@ -19,24 +19,20 @@ package org.apache.shardingsphere.proxy.backend.text.transaction;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.BroadcastDatabaseBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.UnicastDatabaseBackendHandler;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.BeginTransactionStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.CommitStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.ReleaseSavepointStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.RollbackStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.SavepointStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.SetAutoCommitStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.TCLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.XAStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.*;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.tcl.MySQLSetTransactionStatement;
 import org.apache.shardingsphere.transaction.core.TransactionOperationType;
 
 /**
  * Transaction backend handler factory.
  */
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TransactionBackendHandlerFactory {
     
@@ -50,6 +46,7 @@ public final class TransactionBackendHandlerFactory {
      */
     public static TextProtocolBackendHandler newInstance(final SQLStatementContext<? extends TCLStatement> sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
         TCLStatement tclStatement = sqlStatementContext.getSqlStatement();
+        log.info("tclStatement={}, sql={}", tclStatement, sql);
         if (tclStatement instanceof BeginTransactionStatement) {
             return new TransactionBackendHandler(tclStatement, TransactionOperationType.BEGIN, connectionSession);
         }
@@ -73,6 +70,10 @@ public final class TransactionBackendHandlerFactory {
         if (tclStatement instanceof XAStatement) {
             return new TransactionXAHandler(sqlStatementContext, sql, connectionSession);
         }
-        return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
+        if (tclStatement instanceof SetTransactionStatement){
+            return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
+        }
+        log.warn("其他TCLStatement是全广播到所有schema, tclStatement={}, sql={}, from schema={}", tclStatement, sql, connectionSession.getSchemaName());
+        return new BroadcastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
     }
 }

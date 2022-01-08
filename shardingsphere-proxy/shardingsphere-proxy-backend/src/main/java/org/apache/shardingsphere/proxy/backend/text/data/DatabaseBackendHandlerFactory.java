@@ -49,8 +49,7 @@ public final class DatabaseBackendHandlerFactory {
     public static DatabaseBackendHandler newInstance(final SQLStatementContext<?> sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
         SQLStatement sqlStatement = sqlStatementContext.getSqlStatement();
         if (sqlStatement instanceof SetStatement || sqlStatement instanceof DCLStatement) {
-            log.warn("sqlStatement ={}, sql={} only Broadcast on current schema.", sqlStatement, sql);
-            return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
+            return new BroadcastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
         }
         if (sqlStatement instanceof DALStatement || (sqlStatement instanceof SelectStatement && null == ((SelectStatement) sqlStatement).getFrom())) {
             return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
