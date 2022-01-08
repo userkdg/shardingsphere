@@ -133,13 +133,13 @@ public final class CommandExecutorTask implements Runnable {
                     return commandPackets;
                 }
             } catch (Exception e) {
-                log.error("sharding parser error ,sql={}", trimSQL, e);
+                log.error("sharding parser error ,sql={}", trimSQL);
             }
             List<SQLStatement> sqlStatements;
             try {
                 sqlStatements = SQLUtils.parseStatements(trimSQL, DbType.mysql, true);
             } catch (Exception e) {
-                log.error("druid parser error ,sql={}", trimSQL, e);
+                log.error("druid parser error ,sql={}", trimSQL);
                 return commandPackets;
             }
             // 针对多sql的情况做加工

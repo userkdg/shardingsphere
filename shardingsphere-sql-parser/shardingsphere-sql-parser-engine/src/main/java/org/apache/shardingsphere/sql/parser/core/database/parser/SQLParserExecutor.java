@@ -67,7 +67,7 @@ public final class SQLParserExecutor {
             try {
                 return (ParseASTNode) sqlParser.parse();
             } catch (final ParseCancellationException e) {
-                log.error("parse error or sql syntax error", e);
+                log.warn("sql={}, You have an error in your SQL syntax", sql, e);
                 throw new SQLParsingException("You have an error in your SQL syntax");
             }
         }
