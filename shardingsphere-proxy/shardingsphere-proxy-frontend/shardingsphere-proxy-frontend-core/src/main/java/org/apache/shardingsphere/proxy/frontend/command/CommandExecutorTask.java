@@ -135,7 +135,13 @@ public final class CommandExecutorTask implements Runnable {
             } catch (Exception e) {
                 log.error("sharding parser error ,sql={}", trimSQL, e);
             }
-            List<SQLStatement> sqlStatements = SQLUtils.parseStatements(trimSQL, DbType.mysql, true);
+            List<SQLStatement> sqlStatements;
+            try {
+                sqlStatements = SQLUtils.parseStatements(trimSQL, DbType.mysql, true);
+            } catch (Exception e) {
+                log.error("druid parser error ,sql={}", trimSQL, e);
+                return commandPackets;
+            }
             // 针对多sql的情况做加工
             if (sqlStatements.size() > 1000) {
                 ShardingSphereException cause = new ShardingSphereException("multi sql on one packet ,expect max size %d, actual size %d", 1000, sqlStatements.size());
