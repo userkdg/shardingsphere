@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
  * Command executor task.
  */
 @RequiredArgsConstructor
-@Slf4j
+@Slf4j(topic = "SS-PROXY-COMMON")
 public final class CommandExecutorTask implements Runnable {
     
     private final DatabaseProtocolFrontendEngine databaseProtocolFrontendEngine;
@@ -77,9 +77,11 @@ public final class CommandExecutorTask implements Runnable {
      */
     @Override
     public void run() {
+        log.debug("执行前：connSession={}", connectionSession);
         boolean isNeedFlush = false;
         try (PacketPayload payload = databaseProtocolFrontendEngine.getCodecEngine().createPacketPayload((ByteBuf) message, context.channel().attr(CommonConstants.CHARSET_ATTRIBUTE_KEY).get())) {
             connectionSession.getBackendConnection().prepareForTaskExecution();
+            log.debug("prepare执行：connSession={}", connectionSession);
             isNeedFlush = executeCommand(context, payload);
             // CHECKSTYLE:OFF
         } catch (final Exception ex) {
@@ -93,6 +95,8 @@ public final class CommandExecutorTask implements Runnable {
                 connectionSession.getBackendConnection().closeExecutionResources();
             } catch (final BackendConnectionException ex) {
                 exceptions = ex.getExceptions().stream().filter(SQLException.class::isInstance).map(SQLException.class::cast).collect(Collectors.toList());
+            } finally {
+                log.debug("最后ConnectionSession状态为{}", connectionSession);
             }
             if (isNeedFlush) {
                 context.flush();
@@ -143,7 +147,7 @@ public final class CommandExecutorTask implements Runnable {
                 return commandPackets;
             }
             // 针对多sql的情况做加工
-            if (sqlStatements.size() > 1000) {
+            if (sqlStatements.size() > 5000) {
                 ShardingSphereException cause = new ShardingSphereException("multi sql on one packet ,expect max size %d, actual size %d", 1000, sqlStatements.size());
                 log.error("Exception occur: ", cause);
                 throw cause;
@@ -174,6 +178,7 @@ public final class CommandExecutorTask implements Runnable {
             }
             responsePackets.forEach(context::write);
             if (commandExecutor instanceof QueryCommandExecutor) {
+                log.debug("查询sql处理返回结果，connSession={}, commandPacketSql={}", connectionSession, commandPacket);
                 return commandExecuteEngine.writeQueryData(context, connectionSession.getBackendConnection(), (QueryCommandExecutor) commandExecutor, responsePackets.size());
             }
         } finally {

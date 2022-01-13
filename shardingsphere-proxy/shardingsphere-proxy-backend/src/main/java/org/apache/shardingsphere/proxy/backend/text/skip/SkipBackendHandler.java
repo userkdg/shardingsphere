@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.proxy.backend.text.skip;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
 import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandler;
@@ -27,12 +28,14 @@ import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
  * Skip backend handler.
  */
 @RequiredArgsConstructor
+@Slf4j(topic = "SS-PROXY-TEXT-PROTOCOL-SKIP")
 public final class SkipBackendHandler implements TextProtocolBackendHandler {
     
     private final SQLStatement sqlStatement;
     
     @Override
     public ResponseHeader execute() {
+        log.warn("注意：中间件跳过处理{}", sqlStatement);
         return new UpdateResponseHeader(sqlStatement);
     }
 }

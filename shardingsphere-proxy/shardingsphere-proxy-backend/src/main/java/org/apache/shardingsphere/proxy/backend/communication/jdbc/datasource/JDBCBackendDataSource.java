@@ -38,7 +38,7 @@ import java.util.Optional;
 /**
  * Backend data source of JDBC.
  */
-@Slf4j
+@Slf4j(topic = "SS-PROXY-DATASOURCE")
 public final class JDBCBackendDataSource implements BackendDataSource {
     
     /**

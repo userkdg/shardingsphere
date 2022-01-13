@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.executor.sql.prepare;
 
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroup;
 import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroupContext;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionUnit;
@@ -41,6 +42,7 @@ import java.util.Map.Entry;
  * 
  * @param <T> type of input value
  */
+@Slf4j(topic = "SS-PROXY-SQL-EXECUTOR")
 public abstract class AbstractExecutionPrepareEngine<T> implements ExecutionPrepareEngine<T> {
     
     static {
@@ -65,6 +67,7 @@ public abstract class AbstractExecutionPrepareEngine<T> implements ExecutionPrep
             List<SQLUnit> sqlUnits = entry.getValue();
             List<List<SQLUnit>> sqlUnitGroups = group(sqlUnits);
             ConnectionMode connectionMode = maxConnectionsSizePerQuery < sqlUnits.size() ? ConnectionMode.CONNECTION_STRICTLY : ConnectionMode.MEMORY_STRICTLY;
+            log.debug("连接模式：{}，max-connections-size-per-query：{}，sql单元数：{}", connectionMode, maxConnectionsSizePerQuery, sqlUnits.size());
             result.addAll(group(dataSourceName, sqlUnitGroups, connectionMode));
         }
         return decorate(routeContext, result);

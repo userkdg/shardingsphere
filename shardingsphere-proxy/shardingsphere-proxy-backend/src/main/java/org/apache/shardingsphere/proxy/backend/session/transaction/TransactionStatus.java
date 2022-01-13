@@ -19,6 +19,7 @@ package org.apache.shardingsphere.proxy.backend.session.transaction;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 
@@ -26,6 +27,7 @@ import org.apache.shardingsphere.transaction.core.TransactionType;
  * Transaction status.
  */
 @Getter
+@ToString
 public final class TransactionStatus {
     
     private static final long DEFAULT_TIMEOUT_MILLISECONDS = 200L;
@@ -34,7 +36,11 @@ public final class TransactionStatus {
     
     @Setter
     private volatile boolean inTransaction;
-    
+
+    public void setInTransaction(boolean inTransaction) {
+        this.inTransaction = inTransaction;
+    }
+
     private volatile TransactionType transactionType;
 
     @Setter

@@ -37,7 +37,7 @@ import java.sql.SQLFeatureNotSupportedException;
 /**
  * Do transaction operation.
  */
-@Slf4j
+@Slf4j(topic = "SS-PROXY-TEXT-PROTOCOL-TRANSACTION")
 public final class TransactionBackendHandler implements TextProtocolBackendHandler {
     
     private final TCLStatement tclStatement;
@@ -57,10 +57,11 @@ public final class TransactionBackendHandler implements TextProtocolBackendHandl
     
     @Override
     public ResponseHeader execute() throws SQLException {
-        log.info("Do transaction operation , operationType is {}, tclStatement={}", operationType, tclStatement);
+        log.info("进行事务操作：operationType is {}, tclStatement={}, connSession={}", operationType, tclStatement, connectionSession);
         switch (operationType) {
             case BEGIN:
                 if (tclStatement instanceof MySQLBeginTransactionStatement && connectionSession.getTransactionStatus().isInTransaction()) {
+                    log.warn("事务处理connectSession={},MySQL事务中，tclStatement={}，连接会话处于事务中，开启事务前进行提交事务", connectionSession, tclStatement);
                     backendTransactionManager.commit();
                 }
                 backendTransactionManager.begin();
@@ -87,6 +88,7 @@ public final class TransactionBackendHandler implements TextProtocolBackendHandl
             default:
                 throw new SQLFeatureNotSupportedException(operationType.name());
         }
+        log.info("完成事务操作, operationType is {}, tclStatement={}, connSession={}", operationType, tclStatement, connectionSession);
         return new UpdateResponseHeader(tclStatement);
     }
 }

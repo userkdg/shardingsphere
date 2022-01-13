@@ -35,7 +35,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectState
  * Database backend handler factory.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Slf4j
+@Slf4j(topic = "SS-PROXY-TEXT-PROTOCOL-DB-FACTORY")
 public final class DatabaseBackendHandlerFactory {
     
     /**
@@ -49,7 +49,8 @@ public final class DatabaseBackendHandlerFactory {
     public static DatabaseBackendHandler newInstance(final SQLStatementContext<?> sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
         SQLStatement sqlStatement = sqlStatementContext.getSqlStatement();
         if (sqlStatement instanceof SetStatement || sqlStatement instanceof DCLStatement) {
-            return new BroadcastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
+            log.warn("只对当前schema={}进行广播,sql={}", connectionSession.getSchemaName(), sql);
+            return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
         }
         if (sqlStatement instanceof DALStatement || (sqlStatement instanceof SelectStatement && null == ((SelectStatement) sqlStatement).getFrom())) {
             return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);

@@ -30,7 +30,7 @@ import java.sql.SQLException;
 /**
  * Backend transaction manager.
  */
-@Slf4j
+@Slf4j(topic = "SS-PROXY-TRANSACTION")
 public final class BackendTransactionManager implements TransactionManager {
     
     private final JDBCBackendConnection connection;
@@ -47,11 +47,11 @@ public final class BackendTransactionManager implements TransactionManager {
         localTransactionManager = new LocalTransactionManager(backendConnection);
         ShardingSphereTransactionManagerEngine engine = ProxyContext.getInstance().getContextManager().getTransactionContexts().getEngines().get(connection.getConnectionSession().getSchemaName());
         shardingSphereTransactionManager = null == engine ? null : engine.getTransactionManager(transactionType);
-        log.debug("Backend transaction TYPE={}", transactionType);
     }
     
     @Override
     public void begin() throws SQLException {
+        log.info("进行事务操作：set autocommit=0 => begin 事务, connectSession = {}", connection.getConnectionSession());
         if (!connection.getConnectionSession().getTransactionStatus().isInTransaction()) {
             connection.getConnectionSession().getTransactionStatus().setInTransaction(true);
             TransactionHolder.setInTransaction();

@@ -21,6 +21,7 @@ import io.netty.util.AttributeMap;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.infra.metadata.user.Grantee;
@@ -29,21 +30,28 @@ import org.apache.shardingsphere.proxy.backend.communication.SQLStatementSchemaH
 import org.apache.shardingsphere.proxy.backend.session.transaction.TransactionStatus;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Connection session.
  */
-@Slf4j
+@Slf4j(topic = "SS-PROXY-CONNECTION-SESSION")
 @Getter
 @Setter
+@ToString(exclude = {"backendConnection", "grantee", "attributeMap"})
 public final class ConnectionSession {
+    private String sessionId = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
     
     @Setter(AccessLevel.NONE)
     private volatile String schemaName;
     
     private volatile int connectionId;
-    
+
+    public void setConnectionId(int connectionId) {
+        this.connectionId = connectionId;
+    }
+
     private volatile Grantee grantee;
     
     private final TransactionStatus transactionStatus;
@@ -55,10 +63,18 @@ public final class ConnectionSession {
     
     private volatile BackendConnection backendConnection;
 
+    public void setBackendConnection(BackendConnection backendConnection) {
+        this.backendConnection = backendConnection;
+    }
+
+    public BackendConnection getBackendConnection() {
+        return backendConnection;
+    }
+
     public ConnectionSession(final TransactionType initialTransactionType, final AttributeMap attributeMap) {
         transactionStatus = new TransactionStatus(initialTransactionType);
         this.attributeMap = attributeMap;
-        log.debug("new ConnectionSession info, transactionStatus={}, attributeMap={}", transactionStatus, attributeMap);
+        log.debug("new ConnectionSession info, transactionStatus={}, attributeMap={}, connSession={}", transactionStatus, attributeMap, this);
     }
     
     /**

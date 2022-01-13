@@ -41,7 +41,7 @@ import java.util.Optional;
 /**
  * Frontend channel inbound handler.
  */
-@Slf4j
+@Slf4j(topic = "SS-PROXY-FRONTEND")
 public final class FrontendChannelInboundHandler extends ChannelInboundHandlerAdapter {
     
     private final DatabaseProtocolFrontendEngine databaseProtocolFrontendEngine;
@@ -54,6 +54,7 @@ public final class FrontendChannelInboundHandler extends ChannelInboundHandlerAd
         this.databaseProtocolFrontendEngine = databaseProtocolFrontendEngine;
         connectionSession = new ConnectionSession(getTransactionRule().getDefaultType(), channel);
         // TODO Decouple JDBCBackendConnection from this class.
+        log.debug("开始new Connection Session状态为{}", connectionSession);
         connectionSession.setBackendConnection(new JDBCBackendConnection(connectionSession));
     }
     

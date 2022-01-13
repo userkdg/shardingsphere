@@ -25,6 +25,7 @@ import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.BroadcastDatabaseBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.UnicastDatabaseBackendHandler;
+import org.apache.shardingsphere.proxy.backend.text.skip.SkipBackendHandler;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.*;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.tcl.MySQLSetTransactionStatement;
 import org.apache.shardingsphere.transaction.core.TransactionOperationType;
@@ -32,7 +33,7 @@ import org.apache.shardingsphere.transaction.core.TransactionOperationType;
 /**
  * Transaction backend handler factory.
  */
-@Slf4j
+@Slf4j(topic = "SS-PROXY-TEXT-PROTOCOL-TRANSACTION-FACTORY")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TransactionBackendHandlerFactory {
     
@@ -46,7 +47,6 @@ public final class TransactionBackendHandlerFactory {
      */
     public static TextProtocolBackendHandler newInstance(final SQLStatementContext<? extends TCLStatement> sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
         TCLStatement tclStatement = sqlStatementContext.getSqlStatement();
-        log.info("tclStatement={}, sql={}", tclStatement, sql);
         if (tclStatement instanceof BeginTransactionStatement) {
             return new TransactionBackendHandler(tclStatement, TransactionOperationType.BEGIN, connectionSession);
         }
@@ -71,9 +71,21 @@ public final class TransactionBackendHandlerFactory {
             return new TransactionXAHandler(sqlStatementContext, sql, connectionSession);
         }
         if (tclStatement instanceof SetTransactionStatement){
+            // 处理应用请求中操作MySQL只读事务
+            if (tclStatement instanceof MySQLSetTransactionStatement){
+                MySQLSetTransactionStatement statement = (MySQLSetTransactionStatement) tclStatement;
+                if (statement.getAccessMode() != null && statement.getAccessMode().toLowerCase().contains("read") && statement.getAccessMode().toLowerCase().contains("only")) {
+                    return new SkipBackendHandler(statement);
+                }
+                if ("SESSION".equalsIgnoreCase(statement.getScope())) {
+                    return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
+                }else {
+                    return new BroadcastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
+                }
+            }
             return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
         }
-        log.warn("其他TCLStatement是全广播到所有schema, tclStatement={}, sql={}, from schema={}", tclStatement, sql, connectionSession.getSchemaName());
+        log.warn("其他TCLStatement是全广播到所有schema, tclStatement={}, sql={}, from connSession={}", tclStatement, sql, connectionSession);
         return new BroadcastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
     }
 }

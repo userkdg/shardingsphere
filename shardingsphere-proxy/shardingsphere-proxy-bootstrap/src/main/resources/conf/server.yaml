@@ -26,8 +26,9 @@ mode:
   repository:
     type: ZooKeeper
     props:
-      namespace: data_security_ns
+#      namespace: data_security_ns_test
 #      server-lists: 192.168.243.34:12181
+      namespace: data_security_ns_dev
       server-lists: 192.168.243.20:12181,192.168.243.21:12181,192.168.243.22:12181
       retryIntervalMilliseconds: 10000
       timeToLiveSeconds: 60
@@ -38,41 +39,33 @@ mode:
 #
 #rules:
 #  - !AUTHORITY
+#    provider:
+#      props:
+#        user-schema-mappings: root@=db_for_sharding,root@=db_for_rw_split,root@=encrypt_db_test,root@=ec_order_db,sharding@=db_for_sharding,ec_order@=ec_order_db,root@=dap_test,root@=dap_snyc,root@=ec_order_test,root@=cap_test,root@=dap_over,root@=dap_dev,root@=bm_prod,ec_order@=ec_order_test,root@=bm_crev,root@=ec_order,root@=dba_test,root@=sharding_test,root@=druid_test,ec_order@=ec_order,ec_order@=dap_data_test,ec_order@=dap_model_test,root@=sharding_rw,dsmanager@=sharding_rw,dsmanager@=data_asset_platform
+#      type: SCHEMA_PRIVILEGES_PERMITTED
 #    users:
 #      - root@%:root
-#      - sharding@:sharding
-#    provider:
-#      type: ALL_PRIVILEGES_PERMITTED
+#      - sharding@%:sharding
+#      - ec_order@%:HGbZYrqlpr25
+#      - dsmanager@%:l0qwU3UU
 #  - !TRANSACTION
 #    defaultType: XA
 #    providerType: Atomikos
-#  - !SQL_PARSER
-#    sqlCommentParseEnabled: true
-#    sqlStatementCache:
-#      initialCapacity: 2000
-#      maximumSize: 65535
-#      concurrencyLevel: 4
-#    parseTreeCache:
-#      initialCapacity: 128
-#      maximumSize: 1024
-#      concurrencyLevel: 4
 
 #props:
-#  max-connections-size-per-query: 1
-#  kernel-executor-size: 16  # Infinite by default.
-#  proxy-frontend-flush-threshold: 128  # The default value is 128.
-#  proxy-opentracing-enabled: false
-#  proxy-hint-enabled: false
-#  sql-show: false
-#  check-table-metadata-enabled: false
-#  show-process-list-enabled: false
-#    # Proxy backend query fetch size. A larger value may increase the memory usage of ShardingSphere Proxy.
-#    # The default value is -1, which means set the minimum value for different JDBC drivers.
-#  proxy-backend-query-fetch-size: -1
-#  check-duplicate-table-enabled: false
-#  proxy-frontend-executor-size: 0 # Proxy frontend executor size. The default value is 0, which means let Netty decide.
-#    # Available options of proxy backend executor suitable: OLAP(default), OLTP. The OLTP option may reduce time cost of writing packets to client, but it may increase the latency of SQL execution
-#    # if client connections are more than proxy-frontend-netty-executor-size, especially executing slow SQL.
-#  proxy-backend-executor-suitable: OLAP
-#  proxy-frontend-max-connections: 0 # Less than or equal to 0 means no limitation.
-#  sql-federation-enabled: false
+#    proxy-frontend-flush-threshold: 128
+#    proxy-frontend-executor-size: 0
+#    proxy-frontend-max-connections: 0
+#    sql-simple: false
+#    proxy-backend-query-fetch-size: 1000
+#    check-duplicate-table-enabled: false
+#    kernel-executor-size: 150
+#    show-process-list-enabled: false
+#    proxy-backend-executor-suitable: OLTP
+#    proxy-hint-enabled: true
+#    sql-show: true
+#    proxy-opentracing-enabled: false
+#    sql-federation-enabled: false
+#    sql-comment-parse-enabled: false
+#    max-connections-size-per-query: 1
+#    check-table-metadata-enabled: false

@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Setter
-@Slf4j
+@Slf4j(topic = "SS-PROXY-CONNECTION")
 public final class JDBCBackendConnection implements BackendConnection, ExecutorJDBCManager {
     
     static {
@@ -59,7 +59,12 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
     }
     
     private final ConnectionSession connectionSession;
-    
+
+    public ConnectionSession getConnectionSession() {
+//        log.info("获取getconnSession={}", connectionSession);
+        return connectionSession;
+    }
+
     private volatile FederationExecutor federationExecutor;
     
     private final Multimap<String, Connection> cachedConnections = LinkedHashMultimap.create();
@@ -84,6 +89,7 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
     
     @Override
     public List<Connection> getConnections(final String dataSourceName, final int connectionSize, final ConnectionMode connectionMode) throws SQLException {
+        log.debug("获取连接发现缓存connections有{}个，现需要{}个,connSession={}", cachedConnections.size(), connectionSize, connectionSession);
         return connectionSession.getTransactionStatus().isInTransaction()
                 ? getConnectionsWithTransaction(dataSourceName, connectionSize, connectionMode) : getConnectionsWithoutTransaction(dataSourceName, connectionSize, connectionMode);
     }
@@ -93,7 +99,6 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
         synchronized (cachedConnections) {
             connections = cachedConnections.get(dataSourceName);
         }
-        log.debug("connectionId={},事务内获取连接，getConnectionsWithTransaction中发现缓存connections有{}个，现需要{}个", connectionSession.getConnectionId(), connections.size(), connectionSize);
         List<Connection> result;
         if (connections.size() >= connectionSize) {
             result = new ArrayList<>(connections).subList(0, connectionSize);
@@ -126,7 +131,6 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
     private List<Connection> getConnectionsWithoutTransaction(final String dataSourceName, final int connectionSize, final ConnectionMode connectionMode) throws SQLException {
         Preconditions.checkNotNull(connectionSession.getSchemaName(), "Current schema is null.");
         List<Connection> result = ProxyContext.getInstance().getBackendDataSource().getConnections(connectionSession.getSchemaName(), dataSourceName, connectionSize, connectionMode);
-        log.debug("connectionId={},非事务内获取连接，getConnectionsWithoutTransaction直接创建新的{}个连接",connectionSession.getConnectionId(), connectionSize);
         synchronized (cachedConnections) {
             cachedConnections.putAll(dataSourceName, result);
         }
@@ -134,8 +138,10 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
     }
     
     private void replayMethodsInvocation(final Connection target) {
-        for (ConnectionPostProcessor each : connectionPostProcessors) {
-            each.process(target);
+        synchronized (connectionPostProcessors) {
+            for (ConnectionPostProcessor each : connectionPostProcessors) {
+                each.process(target);
+            }
         }
     }
     
@@ -226,14 +232,19 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
             connectionStatus.waitUntilConnectionRelease();
             connectionStatus.switchToUsing();
         }
-        if (!connectionSession.isAutoCommit() && !connectionSession.getTransactionStatus().isInTransaction()) {
-            BackendTransactionManager transactionManager = new BackendTransactionManager(this);
-            try {
-                transactionManager.begin();
-            } catch (SQLException ex) {
-                throw new BackendConnectionException(ex);
-            }
-        }
+//        // TODO: 2022/1/11 这块代码发的位置很奇怪，客户端没有直接执行begin，而是set auto commit = 1，这种情况下，没有走TransactionBackendHandlerFactory.newInstance
+//        if (!connectionSession.isAutoCommit() && !connectionSession.getTransactionStatus().isInTransaction()) {
+//            log.info("prepare执行-2：发现connSession={},isAutoCommit={}，getTransactionStatus为{}，开始事务操作",
+//                    connectionSession,
+//                    connectionSession.isAutoCommit(),
+//                    connectionSession.getTransactionStatus());
+//            BackendTransactionManager transactionManager = new BackendTransactionManager(this);
+//            try {
+//                transactionManager.begin();
+//            } catch (SQLException ex) {
+//                throw new BackendConnectionException(ex);
+//            }
+//        }
     }
     
     @Override
@@ -254,6 +265,7 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
     
     @Override
     public void closeAllResources() {
+        log.debug("connectSession={}进行关闭所有连接资源", connectionSession);
         closeDatabaseCommunicationEngines(true);
         closeConnections(true);
         closeFederationExecutor();
@@ -295,6 +307,7 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
         for (Connection each : cachedConnections.values()) {
             try {
                 if (forceRollback && connectionSession.getTransactionStatus().isInTransaction()) {
+                    log.warn("强制进行连接rollback");
                     each.rollback();
                 }
                 each.close();
@@ -302,6 +315,7 @@ public final class JDBCBackendConnection implements BackendConnection, ExecutorJ
                 result.add(ex);
             }
         }
+        log.debug("关闭会话={}，连接缓存数：{}，PostProcessors={}", connectionSession, cachedConnections.size(), connectionPostProcessors.size());
         cachedConnections.clear();
         connectionPostProcessors.clear();
         return result;

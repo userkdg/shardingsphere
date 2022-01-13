@@ -59,7 +59,7 @@ import java.util.Optional;
 /**
  * Proxy SQL Executor.
  */
-@Slf4j
+@Slf4j(topic = "SS-PROXY-SQL-EXECUTOR")
 public final class ProxySQLExecutor {
     
     private final String type;
@@ -75,7 +75,7 @@ public final class ProxySQLExecutor {
         this.backendConnection = backendConnection;
         ExecutorEngine executorEngine = BackendExecutorContext.getInstance().getExecutorEngine();
         boolean isSerialExecute = backendConnection.isSerialExecute();
-        log.debug("是否串行化执行,isSerialExecute={}", isSerialExecute);
+        log.debug("是否串行化执行,isSerialExecute={},type={},connSession={}", isSerialExecute, type, backendConnection.getConnectionSession());
         MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
         jdbcExecutor = new ProxyJDBCExecutor(type, backendConnection.getConnectionSession(), databaseCommunicationEngine, new JDBCExecutor(executorEngine, isSerialExecute));
         rawExecutor = new RawExecutor(executorEngine, isSerialExecute, metaDataContexts.getProps());

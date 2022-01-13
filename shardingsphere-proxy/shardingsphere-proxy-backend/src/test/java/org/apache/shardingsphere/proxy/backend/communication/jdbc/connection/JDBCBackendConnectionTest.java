@@ -430,6 +430,9 @@ public final class JDBCBackendConnectionTest {
         backendConnection.prepareForTaskExecution();
         verify(backendConnection).closeDatabaseCommunicationEngines(true);
         verify(backendConnection).closeConnections(false);
+        when(backendConnection.getConnectionSession().isAutoCommit()).thenReturn(false);
+        when(backendConnection.getConnectionSession().getTransactionStatus().isInTransaction()).thenReturn(false);
+
     }
     
     @Test

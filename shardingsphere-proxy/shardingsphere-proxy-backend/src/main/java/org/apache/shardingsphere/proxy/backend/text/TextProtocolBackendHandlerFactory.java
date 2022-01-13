@@ -63,7 +63,7 @@ import java.util.function.Supplier;
  * Text protocol backend handler factory.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Slf4j
+@Slf4j(topic = "SS-PROXY-TEXT-PROTOCOL-FACTORY")
 public final class TextProtocolBackendHandlerFactory {
     
     static {
@@ -122,6 +122,7 @@ public final class TextProtocolBackendHandlerFactory {
         SQLCheckEngine.check(sqlStatement, Collections.emptyList(),
                 getRules(schemaName), schemaName, ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaDataMap(), connectionSession.getGrantee());
         if (sqlStatement instanceof TCLStatement) {
+            log.info("进入事务操作：tclStatement={}, sql={}, connectSession = {}", sqlStatementContext.getSqlStatement(), sql, connectionSession);
             return TransactionBackendHandlerFactory.newInstance((SQLStatementContext<TCLStatement>) sqlStatementContext, sql, connectionSession);
         }
         backendHandler = DatabaseAdminBackendHandlerFactory.newInstance(databaseType, sqlStatement, connectionSession);
