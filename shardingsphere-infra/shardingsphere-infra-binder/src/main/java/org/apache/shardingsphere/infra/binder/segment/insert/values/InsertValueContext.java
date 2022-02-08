@@ -20,8 +20,10 @@ package org.apache.shardingsphere.infra.binder.segment.insert.values;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.CommonExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.ComplexExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.util.ExpressionExtractUtil;
@@ -76,14 +78,16 @@ public final class InsertValueContext {
      */
     public Object getValue(final int index) {
         ExpressionSegment valueExpression = valueExpressions.get(index);
-        if (valueExpression instanceof ParameterMarkerExpressionSegment)
+        if (valueExpression instanceof ParameterMarkerExpressionSegment) {
             return parameters.get(getParameterIndex((ParameterMarkerExpressionSegment) valueExpression));
-        else if (valueExpression instanceof CommonExpressionSegment) {
-            if ("null".equalsIgnoreCase(((CommonExpressionSegment) valueExpression).getText())){
+        } else if (valueExpression instanceof ComplexExpressionSegment) {
+            if ("null".equalsIgnoreCase(((ComplexExpressionSegment) valueExpression).getText())) {
                 return null;
             } else {
-                return ((CommonExpressionSegment) valueExpression).getText();
+                return ((ComplexExpressionSegment) valueExpression).getText();
             }
+        } else if (valueExpression instanceof BinaryOperationExpression) {
+            return ((BinaryOperationExpression) valueExpression).getText();
         }
         return ((LiteralExpressionSegment) valueExpression).getLiterals();
     }
