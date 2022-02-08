@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.CommonExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.util.ExpressionExtractUtil;
@@ -75,8 +76,16 @@ public final class InsertValueContext {
      */
     public Object getValue(final int index) {
         ExpressionSegment valueExpression = valueExpressions.get(index);
-        return valueExpression instanceof ParameterMarkerExpressionSegment 
-                ? parameters.get(getParameterIndex((ParameterMarkerExpressionSegment) valueExpression)) : ((LiteralExpressionSegment) valueExpression).getLiterals();
+        if (valueExpression instanceof ParameterMarkerExpressionSegment)
+            return parameters.get(getParameterIndex((ParameterMarkerExpressionSegment) valueExpression));
+        else if (valueExpression instanceof CommonExpressionSegment) {
+            if ("null".equalsIgnoreCase(((CommonExpressionSegment) valueExpression).getText())){
+                return null;
+            } else {
+                return ((CommonExpressionSegment) valueExpression).getText();
+            }
+        }
+        return ((LiteralExpressionSegment) valueExpression).getLiterals();
     }
     
     private int getParameterIndex(final ParameterMarkerExpressionSegment parameterMarkerExpression) {

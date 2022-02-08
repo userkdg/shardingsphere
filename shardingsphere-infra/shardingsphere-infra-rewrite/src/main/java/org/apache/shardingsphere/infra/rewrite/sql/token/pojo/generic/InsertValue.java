@@ -52,7 +52,11 @@ public class InsertValue {
             return "?";
         } else if (expressionSegment instanceof LiteralExpressionSegment) {
             Object literals = ((LiteralExpressionSegment) expressionSegment).getLiterals();
-            return literals instanceof String ? "'" + ((LiteralExpressionSegment) expressionSegment).getLiterals() + "'" : literals.toString();
+            if (null == literals) {
+                return null;
+            }else if (literals instanceof String)
+                return "'" + ((LiteralExpressionSegment) expressionSegment).getLiterals() + "'";
+            return literals.toString();
         } else if (expressionSegment instanceof BinaryOperationExpression) {
             return ((BinaryOperationExpression) expressionSegment).getText();
         }
