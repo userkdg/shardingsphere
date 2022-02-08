@@ -22,7 +22,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.util.Properties;
 
-public final class TestQueryAssistedShardingEncryptAlgorithm implements QueryAssistedEncryptAlgorithm<Object, String> {
+public final class TestQueryAssistedShardingEncryptAlgorithm implements QueryAssistedEncryptAlgorithm {
 
     @Getter
     @Setter
