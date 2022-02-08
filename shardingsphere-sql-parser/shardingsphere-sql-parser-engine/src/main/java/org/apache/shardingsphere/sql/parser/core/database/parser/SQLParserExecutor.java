@@ -67,7 +67,11 @@ public final class SQLParserExecutor {
             try {
                 return (ParseASTNode) sqlParser.parse();
             } catch (final ParseCancellationException e) {
-                log.error("sql={}, throw ParseCancellationException: You have an error in your SQL syntax", sql);
+                if (sql.trim().toLowerCase().startsWith("preview")){
+                    log.debug("注：解析中忽略preview解析失败的异常，屏蔽生产级别日志输出");
+                }else {
+                    log.error("[注：若为distSQL解析异常，则可忽略]sql={}, throw ParseCancellationException: You have an error in your SQL syntax", sql);
+                }
                 throw new SQLParsingException("You have an error in your SQL syntax");
             }
         }
