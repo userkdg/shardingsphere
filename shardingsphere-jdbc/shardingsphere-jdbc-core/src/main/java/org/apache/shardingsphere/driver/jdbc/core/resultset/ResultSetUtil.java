@@ -22,6 +22,8 @@ import com.google.common.primitives.Longs;
 import com.google.common.primitives.Shorts;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 
 import java.math.BigDecimal;
@@ -34,12 +36,23 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * ResultSet utility.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ResultSetUtil {
+
+    private static final Set<String> NUMBER_TYPE_NAMES = new HashSet<String>(){{
+        add("short");
+        add("int");
+        add("long");
+        add("double");
+        add("float");
+        add("java.math.BigDecimal");
+    }};
     
     /**
      * Convert value via expected class type.
@@ -76,13 +89,44 @@ public final class ResultSetUtil {
         if (boolean.class.equals(convertType)) {
             return convertBooleanValue(value);
         }
+        if (NUMBER_TYPE_NAMES.contains(convertType.getName())){
+            return convertObject2NumberValue(value, convertType);
+        }
         if (String.class.equals(convertType)) {
             return value.toString();
-        } else {
+        }
+        return value;
+    }
+
+    /**
+     * obj转为指定数字类型type
+     *
+     */
+    private static Object convertObject2NumberValue(Object value, Class<?> convertType) {
+        if (value == null) {
+            return null;
+        }
+        if (convertType == null) {
             return value;
         }
+        String numObj = value.toString();
+        switch (convertType.getName()) {
+            case "short":
+            case "int":
+                return NumberUtils.toInt(numObj);
+            case "long":
+                return NumberUtils.toLong(numObj);
+            case "double":
+                return NumberUtils.toDouble(numObj);
+            case "float":
+                return NumberUtils.toFloat(numObj);
+            case "java.math.BigDecimal":
+                return new BigDecimal(numObj);
+            default:
+                throw new ShardingSphereException("Unsupported data type: %s for value %s", convertType, value);
+        }
     }
-    
+
     private static Object convertURL(final Object value) {
         String val = value.toString();
         try {
@@ -167,7 +211,7 @@ public final class ResultSetUtil {
                 return null;
         }
     }
-    
+
     private static Object convertNumberValue(final Object value, final Class<?> convertType) {
         Number number = (Number) value;
         switch (convertType.getName()) {

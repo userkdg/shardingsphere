@@ -43,11 +43,24 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public final class ResultSetUtilTest {
+
+    @Test
+    public void assertConverValueString2Long() {
+        Object obj = "1888";
+        assert ResultSetUtil.convertValue(obj, long.class) instanceof Long;
+        assert ResultSetUtil.convertValue(obj, short.class) instanceof Integer;
+        assert ResultSetUtil.convertValue(obj, int.class) instanceof Integer;
+        assert ResultSetUtil.convertValue(obj, float.class) instanceof Float;
+        assert ResultSetUtil.convertValue(obj, double.class) instanceof Double;
+        assert ResultSetUtil.convertValue(obj, BigDecimal.class) instanceof BigDecimal;
+
+    }
+
     @Test
     public void assertConvertValue() {
         Object object = new Object();
         assertThat(ResultSetUtil.convertValue(object, String.class), is(object.toString()));
-        assertThat(ResultSetUtil.convertValue("1", int.class), is("1"));
+        assertThat(ResultSetUtil.convertValue("1", int.class), is(1));
     }
     
     @Test
