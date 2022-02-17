@@ -211,11 +211,17 @@ public final class ProjectionEngine {
                 ColumnProjection colP = (ColumnProjection) each;
                 ColumnProjection newColP = new ColumnProjection(tableAlias, colP.getColumnLabel(), null);
                 result.add(newColP);
-            }
-            if (each instanceof ShorthandProjection) {
+            }else if (each instanceof ShorthandProjection) {
                 Collection<ColumnProjection> colPs = ((ShorthandProjection) each).getActualColumns().values();
                 List<ColumnProjection> newColPs = colPs.stream().map(colP -> new ColumnProjection(tableAlias, colP.getColumnLabel(), null)).collect(Collectors.toList());
                 result.addAll(newColPs);
+            }else if (each instanceof ExpressionProjection){
+                ExpressionProjection colP = (ExpressionProjection) each;
+                ColumnProjection newColP = new ColumnProjection(tableAlias, colP.getColumnLabel(), colP.getAlias().orElse(null));
+                result.add(newColP);
+            } else {
+                ColumnProjection newColP = new ColumnProjection(tableAlias, each.getColumnLabel(), each.getAlias().orElse(null));
+                result.add(newColP);
             }
         }
         return result;
