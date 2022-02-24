@@ -32,6 +32,7 @@
         <module>shardingsphere-encrypt-core</module>
         <module>shardingsphere-encrypt-distsql</module>
         <module>shardingsphere-encrypt-spring</module>
+        <module>shardingsphere-encrypt-algo-sdk</module>
     </modules>
 </project>
 
