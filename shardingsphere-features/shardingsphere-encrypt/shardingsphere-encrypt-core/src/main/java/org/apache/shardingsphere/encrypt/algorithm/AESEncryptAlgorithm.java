@@ -21,10 +21,13 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
@@ -33,6 +36,7 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -40,6 +44,7 @@ import java.util.Properties;
  */
 @Getter
 @Setter
+@Slf4j
 public final class AESEncryptAlgorithm implements EncryptAlgorithm<Object, String> {
     
     private static final String AES_KEY = "aes-key-value";
@@ -57,25 +62,33 @@ public final class AESEncryptAlgorithm implements EncryptAlgorithm<Object, Strin
         Preconditions.checkArgument(props.containsKey(AES_KEY), "%s can not be null.", AES_KEY);
         return Arrays.copyOf(DigestUtils.sha1(props.getProperty(AES_KEY)), 16);
     }
-    
-    @SneakyThrows(GeneralSecurityException.class)
+
     @Override
     public String encrypt(final Object plainValue) {
         if (null == plainValue) {
             return null;
         }
-        byte[] result = getCipher(Cipher.ENCRYPT_MODE).doFinal(String.valueOf(plainValue).getBytes(StandardCharsets.UTF_8));
-        return DatatypeConverter.printBase64Binary(result);
+        try {
+            byte[] result = getCipher(Cipher.ENCRYPT_MODE).doFinal(String.valueOf(plainValue).getBytes(StandardCharsets.UTF_8));
+            return DatatypeConverter.printBase64Binary(result);
+        } catch (IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException e) {
+            log.error("加密异常，plainValue={}", plainValue, e);
+        }
+        return Objects.toString(plainValue, null);
     }
-    
-    @SneakyThrows(GeneralSecurityException.class)
+
     @Override
     public Object decrypt(final String cipherValue) {
         if (null == cipherValue) {
             return null;
         }
-        byte[] result = getCipher(Cipher.DECRYPT_MODE).doFinal(DatatypeConverter.parseBase64Binary(cipherValue));
-        return new String(result, StandardCharsets.UTF_8);
+        try {
+            byte[] result = getCipher(Cipher.DECRYPT_MODE).doFinal(DatatypeConverter.parseBase64Binary(cipherValue));
+            return new String(result, StandardCharsets.UTF_8);
+        } catch (IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException e) {
+            log.error("解密异常，cipherValue={}", cipherValue, e);
+        }
+        return cipherValue;
     }
     
     private Cipher getCipher(final int decryptMode) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
