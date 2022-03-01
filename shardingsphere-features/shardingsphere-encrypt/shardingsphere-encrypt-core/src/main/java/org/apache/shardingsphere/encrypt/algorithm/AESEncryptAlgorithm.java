@@ -71,7 +71,7 @@ public final class AESEncryptAlgorithm implements EncryptAlgorithm<Object, Strin
         try {
             byte[] result = getCipher(Cipher.ENCRYPT_MODE).doFinal(String.valueOf(plainValue).getBytes(StandardCharsets.UTF_8));
             return DatatypeConverter.printBase64Binary(result);
-        } catch (IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException e) {
+        } catch (Exception e) {
             log.error("加密异常，plainValue={}", plainValue, e);
         }
         return Objects.toString(plainValue, null);
@@ -85,7 +85,7 @@ public final class AESEncryptAlgorithm implements EncryptAlgorithm<Object, Strin
         try {
             byte[] result = getCipher(Cipher.DECRYPT_MODE).doFinal(DatatypeConverter.parseBase64Binary(cipherValue));
             return new String(result, StandardCharsets.UTF_8);
-        } catch (IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException e) {
+        } catch (Exception e) {
             log.error("解密异常，cipherValue={}", cipherValue, e);
         }
         return cipherValue;
