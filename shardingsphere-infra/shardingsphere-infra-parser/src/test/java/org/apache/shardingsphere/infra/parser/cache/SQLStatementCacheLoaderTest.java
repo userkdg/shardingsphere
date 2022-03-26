@@ -33,8 +33,16 @@ import static org.mockito.Mockito.mock;
 
 public final class SQLStatementCacheLoaderTest {
     
-    private static final String SQL = "select * from user where id=1";
-    
+    private static final String SQL = "update t_user set user_name='test_mybatis_1_update', pwd='pwd_mybatis_1_update' where user_id=1;update t_user set user_name='test_mybatis_1_update', pwd='pwd_mybatis_1_update' where user_id=1";
+
+    @Test
+    public void assertSQLStatementCacheLoadUpdateBatch() {
+        SQLParserRule parserRule = new SQLParserRule(new DefaultSQLParserRuleConfigurationBuilder().build());
+        SQLStatementCacheLoader sqlStatementCacheLoader = new SQLStatementCacheLoader("MySQL", parserRule);
+        SQLStatement load = sqlStatementCacheLoader.load(SQL);
+        System.out.println(load);
+    }
+
     @SneakyThrows
     @Test
     public void assertSQLStatementCacheLoad() {

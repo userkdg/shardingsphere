@@ -25,6 +25,7 @@ import org.apache.shardingsphere.encrypt.rewrite.token.pojo.EncryptParameterAssi
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.dml.UpdateBatchStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.UpdateStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.util.DMLStatementContextHelper;
 import org.apache.shardingsphere.infra.binder.type.TableAvailable;
@@ -40,13 +41,11 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateBatchStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.handler.dml.InsertStatementHandler;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Assignment generator for encrypt.
@@ -55,7 +54,10 @@ public final class EncryptAssignmentTokenGenerator extends BaseEncryptSQLTokenGe
 
     @Override
     protected boolean isGenerateSQLTokenForEncrypt(final SQLStatementContext sqlStatementContext) {
-        return sqlStatementContext instanceof UpdateStatementContext || (sqlStatementContext instanceof InsertStatementContext
+        return (sqlStatementContext instanceof UpdateStatementContext ||
+                sqlStatementContext instanceof UpdateBatchStatementContext)
+                ||
+                (sqlStatementContext instanceof InsertStatementContext
                 && InsertStatementHandler.getSetAssignmentSegment(((InsertStatementContext) sqlStatementContext).getSqlStatement()).isPresent());
     }
 
@@ -64,44 +66,65 @@ public final class EncryptAssignmentTokenGenerator extends BaseEncryptSQLTokenGe
         Collection<SQLToken> result = new LinkedList<>();
         String tableName = ((TableAvailable) sqlStatementContext).getAllTables().iterator().next().getTableName().getIdentifier().getValue();
         String schemaName = DMLStatementContextHelper.getSchemaName(sqlStatementContext);
-        for (AssignmentSegment each : getSetAssignmentSegment(sqlStatementContext.getSqlStatement()).getAssignments()) {
+        if (sqlStatementContext instanceof UpdateBatchStatementContext) {
+            UpdateBatchStatement updateBatchStatement = (UpdateBatchStatement) sqlStatementContext.getSqlStatement();
+            // 2022/3/26 目前antlr实现了mysql
+            List<UpdateStatement> updateStatements = updateBatchStatement.getUpdateStatements();
+            for (UpdateStatement each : updateStatements) {
+                generateSetAssignmentSQLToken(result, tableName, schemaName, each);
+                UpdateStatementContext updateStatContext = new UpdateStatementContext(
+                        ((UpdateBatchStatementContext) sqlStatementContext).getMetaDataMap(),
+                        ((UpdateBatchStatementContext) sqlStatementContext).getParameters(), each, schemaName);
+                updateContextGenerateToken(updateStatContext, result);
+            }
+        } else {
+            generateSetAssignmentSQLToken(result, tableName, schemaName, sqlStatementContext.getSqlStatement());
+        }
+        if (sqlStatementContext instanceof UpdateStatementContext) {
+            updateContextGenerateToken(sqlStatementContext, result);
+        }
+        return result;
+    }
+
+    private void generateSetAssignmentSQLToken(Collection<SQLToken> result, String tableName, String schemaName, SQLStatement sqlStatement) {
+        for (AssignmentSegment each : getSetAssignmentSegment(sqlStatement).getAssignments()) {
             if (getEncryptRule().findEncryptor(schemaName, tableName, each.getColumns().get(0).getIdentifier().getValue()).isPresent()) {
                 generateSQLToken(schemaName, tableName, each).ifPresent(result::add);
             }
         }
-        if (sqlStatementContext instanceof UpdateStatementContext) {
-            UpdateStatementContext updateStat = (UpdateStatementContext) sqlStatementContext;
-            Optional<WhereSegment> where = (updateStat).getWhere();
-            Optional<SubqueryExpressionSegment> subqueryExpressionSegment = where.map(WhereSegment::getExpr)
-                    .filter(e -> e instanceof BinaryOperationExpression)
-                    .map(e -> (BinaryOperationExpression) e)
-                    .filter(e -> e.getRight() instanceof SubqueryExpressionSegment)
-                    .map(e -> (SubqueryExpressionSegment) e.getRight());
-            subqueryExpressionSegment.ifPresent(s -> {
-                SelectStatementContext selectStatementContext = new SelectStatementContext(updateStat.getMetaDataMap(), updateStat.getParameters(),
-                        s.getSubquery().getSelect(), updateStat.getSchemaName());
+    }
 
-                EncryptProjectionTokenGenerator generator = new EncryptProjectionTokenGenerator();
-                generator.setEncryptRule(getEncryptRule());
-                if (generator.isGenerateSQLTokenForEncrypt(selectStatementContext)){
-                    Collection<SubstitutableColumnNameToken> projectionTokens = generator.generateSQLTokens(selectStatementContext);
-                    result.addAll(projectionTokens);
-                }
-                EncryptPredicateColumnTokenGenerator tokenGenerator = new EncryptPredicateColumnTokenGenerator();
-                tokenGenerator.setEncryptRule(getEncryptRule());
-                if (tokenGenerator.isGenerateSQLTokenForEncrypt(sqlStatementContext)) {
-                    Collection<SubstitutableColumnNameToken> whereTokens = tokenGenerator.generateSQLTokens(selectStatementContext);
-                    result.addAll(whereTokens);
-                }
-                EncryptPredicateRightValueTokenGenerator predicateTokenGen = new EncryptPredicateRightValueTokenGenerator();
-                predicateTokenGen.setEncryptRule(getEncryptRule());
-                if (predicateTokenGen.isGenerateSQLTokenForEncrypt(selectStatementContext)){
-                    Collection<SQLToken> sqlTokens = predicateTokenGen.generateSQLTokens(selectStatementContext);
-                    result.addAll(sqlTokens);
-                }
-            });
-        }
-        return result;
+    private void updateContextGenerateToken(SQLStatementContext sqlStatementContext, Collection<SQLToken> result) {
+        UpdateStatementContext updateStat = (UpdateStatementContext) sqlStatementContext;
+        Optional<WhereSegment> where = (updateStat).getWhere();
+        Optional<SubqueryExpressionSegment> subqueryExpressionSegment = where.map(WhereSegment::getExpr)
+                .filter(e -> e instanceof BinaryOperationExpression)
+                .map(e -> (BinaryOperationExpression) e)
+                .filter(e -> e.getRight() instanceof SubqueryExpressionSegment)
+                .map(e -> (SubqueryExpressionSegment) e.getRight());
+        subqueryExpressionSegment.ifPresent(s -> {
+            SelectStatementContext selectStatementContext = new SelectStatementContext(updateStat.getMetaDataMap(), updateStat.getParameters(),
+                    s.getSubquery().getSelect(), updateStat.getSchemaName());
+
+            EncryptProjectionTokenGenerator generator = new EncryptProjectionTokenGenerator();
+            generator.setEncryptRule(getEncryptRule());
+            if (generator.isGenerateSQLTokenForEncrypt(selectStatementContext)){
+                Collection<SubstitutableColumnNameToken> projectionTokens = generator.generateSQLTokens(selectStatementContext);
+                result.addAll(projectionTokens);
+            }
+            EncryptPredicateColumnTokenGenerator tokenGenerator = new EncryptPredicateColumnTokenGenerator();
+            tokenGenerator.setEncryptRule(getEncryptRule());
+            if (tokenGenerator.isGenerateSQLTokenForEncrypt(sqlStatementContext)) {
+                Collection<SubstitutableColumnNameToken> whereTokens = tokenGenerator.generateSQLTokens(selectStatementContext);
+                result.addAll(whereTokens);
+            }
+            EncryptPredicateRightValueTokenGenerator predicateTokenGen = new EncryptPredicateRightValueTokenGenerator();
+            predicateTokenGen.setEncryptRule(getEncryptRule());
+            if (predicateTokenGen.isGenerateSQLTokenForEncrypt(selectStatementContext)){
+                Collection<SQLToken> sqlTokens = predicateTokenGen.generateSQLTokens(selectStatementContext);
+                result.addAll(sqlTokens);
+            }
+        });
     }
 
     private SetAssignmentSegment getSetAssignmentSegment(final SQLStatement sqlStatement) {

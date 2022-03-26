@@ -188,6 +188,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Sim
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.util.SQLUtil;
 import org.apache.shardingsphere.sql.parser.sql.common.value.collection.CollectionValue;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
@@ -196,16 +197,9 @@ import org.apache.shardingsphere.sql.parser.sql.common.value.literal.impl.Number
 import org.apache.shardingsphere.sql.parser.sql.common.value.literal.impl.OtherLiteralValue;
 import org.apache.shardingsphere.sql.parser.sql.common.value.literal.impl.StringLiteralValue;
 import org.apache.shardingsphere.sql.parser.sql.common.value.parametermarker.ParameterMarkerValue;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLDeleteStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLInsertStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLSelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLUpdateStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.*;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -1137,7 +1131,17 @@ public abstract class MySQLStatementSQLVisitor extends MySQLStatementBaseVisitor
         }
         return result;
     }
-    
+
+    @Override
+    public ASTNode visitUpdateMulti(MySQLStatementParser.UpdateMultiContext ctx) {
+        List<UpdateContext> updateContexts = ctx.update();
+        List<UpdateStatement> updateStatements = new ArrayList<>(updateContexts.size());
+        for (UpdateContext each : updateContexts) {
+            updateStatements.add((MySQLUpdateStatement)this.visitUpdate(each));
+        }
+        return new MySQLUpdateBatchStatement(updateStatements);
+    }
+
     @Override
     public ASTNode visitUpdate(final UpdateContext ctx) {
         MySQLUpdateStatement result = new MySQLUpdateStatement();

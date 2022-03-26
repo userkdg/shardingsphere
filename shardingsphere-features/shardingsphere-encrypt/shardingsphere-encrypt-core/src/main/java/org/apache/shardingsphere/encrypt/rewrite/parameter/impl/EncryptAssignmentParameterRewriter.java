@@ -19,6 +19,7 @@ package org.apache.shardingsphere.encrypt.rewrite.parameter.impl;
 
 import com.google.common.base.Preconditions;
 import org.apache.shardingsphere.encrypt.rewrite.parameter.EncryptParameterRewriter;
+import org.apache.shardingsphere.infra.binder.statement.dml.UpdateBatchStatementContext;
 import org.apache.shardingsphere.infra.rewrite.parameter.builder.ParameterBuilder;
 import org.apache.shardingsphere.infra.rewrite.parameter.builder.impl.GroupedParameterBuilder;
 import org.apache.shardingsphere.infra.rewrite.parameter.builder.impl.StandardParameterBuilder;
@@ -51,6 +52,9 @@ public final class EncryptAssignmentParameterRewriter extends EncryptParameterRe
         if (sqlStatementContext instanceof UpdateStatementContext) {
             return true;
         }
+        if (sqlStatementContext instanceof UpdateBatchStatementContext) {
+            return true;
+        }
         if (sqlStatementContext instanceof InsertStatementContext) {
             return InsertStatementHandler.getSetAssignmentSegment(((InsertStatementContext) sqlStatementContext).getSqlStatement()).isPresent();
         }
@@ -61,7 +65,19 @@ public final class EncryptAssignmentParameterRewriter extends EncryptParameterRe
     public void rewrite(final ParameterBuilder parameterBuilder, final SQLStatementContext sqlStatementContext, final List<Object> parameters) {
         String tableName = ((TableAvailable) sqlStatementContext).getAllTables().iterator().next().getTableName().getIdentifier().getValue();
         String schemaName = DMLStatementContextHelper.getSchemaName(sqlStatementContext);
-        for (AssignmentSegment each : getSetAssignmentSegment(sqlStatementContext.getSqlStatement()).getAssignments()) {
+        if (!(sqlStatementContext instanceof UpdateBatchStatementContext)) {
+            findEncryptParameters(parameterBuilder, parameters, tableName, schemaName, sqlStatementContext.getSqlStatement());
+        } else {
+            UpdateBatchStatementContext statementContext = (UpdateBatchStatementContext) sqlStatementContext;
+            List<UpdateStatement> sqlStatements = statementContext.getSqlStatement().getUpdateStatements();
+            for (UpdateStatement sqlStatement : sqlStatements) {
+                findEncryptParameters(parameterBuilder, parameters, tableName, schemaName, sqlStatement);
+            }
+        }
+    }
+
+    private void findEncryptParameters(ParameterBuilder parameterBuilder, List<Object> parameters, String tableName, String schemaName, SQLStatement sqlStatement2) {
+        for (AssignmentSegment each : getSetAssignmentSegment(sqlStatement2).getAssignments()) {
             if (each.getValue() instanceof ParameterMarkerExpressionSegment && getEncryptRule().findEncryptor(schemaName, tableName, each.getColumns().get(0).getIdentifier().getValue()).isPresent()) {
                 StandardParameterBuilder standardParameterBuilder = parameterBuilder instanceof StandardParameterBuilder
                         ? (StandardParameterBuilder) parameterBuilder : ((GroupedParameterBuilder) parameterBuilder).getParameterBuilders().get(0);
@@ -69,7 +85,7 @@ public final class EncryptAssignmentParameterRewriter extends EncryptParameterRe
             }
         }
     }
-    
+
     private SetAssignmentSegment getSetAssignmentSegment(final SQLStatement sqlStatement) {
         if (sqlStatement instanceof InsertStatement) {
             Optional<SetAssignmentSegment> result = InsertStatementHandler.getSetAssignmentSegment((InsertStatement) sqlStatement);

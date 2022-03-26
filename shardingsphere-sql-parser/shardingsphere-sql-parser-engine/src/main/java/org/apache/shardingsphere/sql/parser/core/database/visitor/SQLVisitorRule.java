@@ -33,6 +33,8 @@ public enum SQLVisitorRule {
     INSERT("Insert", SQLStatementType.DML),
     
     UPDATE("Update", SQLStatementType.DML),
+
+    UPDATE_MULTI("UpdateMulti", SQLStatementType.DML),
     
     DELETE("Delete", SQLStatementType.DML),
     

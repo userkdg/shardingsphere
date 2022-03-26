@@ -15,41 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.example.encrypt.spring.namespace.jdbc;
+package org.apache.shardingsphere.sql.parser.sql.common.statement.dml;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.encrypt.spi.QueryAssistedEncryptAlgorithm;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 
-import java.util.Properties;
+import java.util.List;
 
-public final class TestQueryAssistedShardingEncryptAlgorithm implements QueryAssistedEncryptAlgorithm<Object,String> {
+/**
+ * Update batch statement.
+ */
+@Getter
+@Setter
+@ToString
+public abstract class UpdateBatchStatement extends AbstractSQLStatement implements DMLStatement {
 
-    @Getter
-    @Setter
-    private Properties props;
+    private final List<UpdateStatement> updateStatements;
 
-    @Override
-    public void init() {
+    public UpdateBatchStatement(List<UpdateStatement> mySQLUpdateStatements) {
+        this.updateStatements = mySQLUpdateStatements;
     }
-    
-    @Override
-    public String encrypt(final Object plainValue) {
-        return "encryptValue";
-    }
-    
-    @Override
-    public Object decrypt(final String cipherValue) {
-        return "decryptValue";
-    }
-    
-    @Override
-    public String queryAssistedEncrypt(final Object plainValue) {
-        return "assistedEncryptValue";
-    }
-    
-    @Override
-    public String getType() {
-        return "assistedTest";
-    }
+
+
 }

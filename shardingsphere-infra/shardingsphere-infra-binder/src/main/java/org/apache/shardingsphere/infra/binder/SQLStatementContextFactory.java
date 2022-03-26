@@ -46,12 +46,7 @@ import org.apache.shardingsphere.infra.binder.statement.ddl.DropTableStatementCo
 import org.apache.shardingsphere.infra.binder.statement.ddl.DropViewStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.ddl.PrepareStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.ddl.TruncateStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.CallStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.CopyStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.DeleteStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.UpdateStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.dml.*;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
@@ -76,13 +71,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropTableSt
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropViewStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.PrepareStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.TruncateStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.CallStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.CopyStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DMLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DeleteStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.*;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLOptimizeTableStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowColumnsStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowCreateTableStatement;
@@ -150,6 +139,9 @@ public final class SQLStatementContextFactory {
         }
         if (sqlStatement instanceof CopyStatement) {
             return new CopyStatementContext(metaDataMap, parameters, (CopyStatement) sqlStatement, defaultSchemaName);
+        }
+        if (sqlStatement instanceof UpdateBatchStatement) {
+            return new UpdateBatchStatementContext(metaDataMap, parameters, (UpdateBatchStatement)sqlStatement, defaultSchemaName);
         }
         throw new UnsupportedOperationException(String.format("Unsupported SQL statement `%s`", sqlStatement.getClass().getSimpleName()));
     }

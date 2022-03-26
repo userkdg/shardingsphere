@@ -23,7 +23,7 @@ import org.apache.shardingsphere.encrypt.spi.QueryAssistedEncryptAlgorithm;
 
 import java.util.Properties;
 
-public final class TestQueryAssistedShardingEncryptAlgorithm implements QueryAssistedEncryptAlgorithm {
+public final class TestQueryAssistedShardingEncryptAlgorithm implements QueryAssistedEncryptAlgorithm<Object,String> {
 
     @Getter
     @Setter

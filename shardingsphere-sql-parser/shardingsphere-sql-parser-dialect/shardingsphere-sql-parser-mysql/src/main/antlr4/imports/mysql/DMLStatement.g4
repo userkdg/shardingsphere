@@ -75,6 +75,10 @@ replaceSelectClause
     : valueReference? (LP_ fields? RP_)? select
     ;
 
+updateMulti
+    : (update SEMI_)* update SEMI_?
+    ;
+
 update
     : withClause? UPDATE updateSpecification_ tableReferences setAssignmentsClause whereClause? orderByClause? limitClause?
     ;

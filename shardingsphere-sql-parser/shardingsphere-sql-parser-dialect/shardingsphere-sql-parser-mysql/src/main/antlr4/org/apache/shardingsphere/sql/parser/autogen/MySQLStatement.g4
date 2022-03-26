@@ -23,6 +23,7 @@ execute
     : (select
     | insert
     | update
+    | updateMulti
     | delete
     | replace
     | binlog

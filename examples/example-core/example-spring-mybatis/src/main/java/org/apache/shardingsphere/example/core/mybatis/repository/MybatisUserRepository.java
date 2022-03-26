@@ -17,7 +17,13 @@
 
 package org.apache.shardingsphere.example.core.mybatis.repository;
 
+import org.apache.ibatis.annotations.Param;
+import org.apache.shardingsphere.example.core.api.entity.User;
 import org.apache.shardingsphere.example.core.api.repository.UserRepository;
 
+import java.util.List;
+
 public interface MybatisUserRepository extends UserRepository {
+
+    void updateUsers(@Param("userList") List<User> users);
 }

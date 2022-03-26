@@ -48,4 +48,17 @@
     <select id="selectAll" resultMap="baseResultMap">
         SELECT * FROM t_user;
     </select>
+
+    <update id="updateUsers">
+        <foreach collection="userList" item="item" separator=";">
+            UPDATE
+            t_user
+            SET
+            user_name = #{item.userName},
+            pwd = #{item.pwd}
+            <where>
+                user_id = #{item.userId}
+            </where>
+        </foreach>
+    </update>
 </mapper>

@@ -15,15 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.example.core.api.repository;
+package org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml;
 
-import org.apache.shardingsphere.example.core.api.entity.User;
+import lombok.Getter;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateBatchStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.MySQLStatement;
 
 import java.util.List;
 
-public interface UserRepository extends CommonRepository<User, Long> {
+/**
+ * MySQL update batch statement.
+ */
+@ToString
+@Getter
+public final class MySQLUpdateBatchStatement extends UpdateBatchStatement implements MySQLStatement {
 
-    default void updateUsers(List<User> users) {
-
+    public MySQLUpdateBatchStatement(List<UpdateStatement> mySQLUpdateStatements) {
+        super(mySQLUpdateStatements);
     }
+
 }

@@ -29,6 +29,13 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-sql-parser-mysql</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
             <artifactId>shardingsphere-distsql-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
