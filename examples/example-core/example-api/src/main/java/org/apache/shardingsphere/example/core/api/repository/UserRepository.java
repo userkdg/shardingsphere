@@ -32,7 +32,7 @@ public interface UserRepository extends CommonRepository<User, Long> {
         return Collections.emptyList();
     }
 
-    default List<User> selectFixture2(List<Long> userIdList) {
+    default List<User> selectFixture2() {
         return Collections.emptyList();
     }
 }

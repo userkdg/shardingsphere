@@ -77,15 +77,20 @@
     </select>
 
     <select id="selectFixture2" resultMap="baseResultMap">
-        SELECT
-        *
-        FROM
-        t_user
-        <where>
-            user_id in
-            <foreach collection="userIdList" item="item" open="(" close=")">
-                #{item,jdbcType=INTEGER}
-            </foreach>
-        </where>
+        SELECT a.user_id, a.user_name
+        FROM t_user a
+                     left join t_user b on b.user_name = a.user_name
+        where a.user_name = 'xx'
+        union all
+        SELECT a.user_id, a.user_name
+        FROM t_user a
+                     left join t_user b on b.user_name = a.user_name
+        where a.user_name = 'xx'
+        union
+        SELECT a.user_id, a.user_name
+        FROM t_user a
+                     left join t_user b on b.user_name = a.user_name
+        where a.user_name = 'xxxx'
+          and a.pwd = '1212'
     </select>
 </mapper>

@@ -38,6 +38,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.S
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubqueryExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.AndPredicate;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.union.UnionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.util.ColumnExtractor;
 import org.apache.shardingsphere.sql.parser.sql.common.util.ExpressionExtractUtil;
@@ -145,8 +146,18 @@ public final class EncryptConditionEngine {
             ((WhereAvailable) sqlStatementContext).getWhere().ifPresent(result::add);
         }
         if (sqlStatementContext instanceof SelectStatementContext) {
-            result.addAll(WhereExtractUtil.getSubqueryWhereSegments((SelectStatement) sqlStatementContext.getSqlStatement()));
-            result.addAll(WhereExtractUtil.getJoinWhereSegments((SelectStatement) sqlStatementContext.getSqlStatement()));
+            SelectStatementContext selectStatementContext = (SelectStatementContext) sqlStatementContext;
+            SelectStatement selectStatement = selectStatementContext.getSqlStatement();
+            result.addAll(WhereExtractUtil.getSubqueryWhereSegments(selectStatement));
+            result.addAll(WhereExtractUtil.getJoinWhereSegments(selectStatement));
+            if (selectStatement.getUnionSegments() != null && !selectStatement.getUnionSegments().isEmpty()){
+                for (UnionSegment unionSegment : selectStatement.getUnionSegments()) {
+                    Collection<WhereSegment> whereSegments = getWhereSegments(new SelectStatementContext(selectStatementContext.getMetaDataMap(),
+                            selectStatementContext.getParameters(),
+                            unionSegment.getSelectStatement(), selectStatementContext.getSchemaName()));
+                    result.addAll(whereSegments);
+                }
+            }
         }
         if (sqlStatementContext instanceof InsertStatementContext && null != ((InsertStatementContext) sqlStatementContext).getInsertSelectContext()) {
             result.addAll(getWhereSegments(((InsertStatementContext) sqlStatementContext).getInsertSelectContext().getSelectStatementContext()));

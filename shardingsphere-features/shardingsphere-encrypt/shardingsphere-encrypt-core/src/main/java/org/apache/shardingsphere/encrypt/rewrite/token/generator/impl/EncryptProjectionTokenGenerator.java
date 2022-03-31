@@ -42,6 +42,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ColumnPr
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ShorthandProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.union.UnionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 
 import java.util.*;
@@ -159,6 +160,15 @@ public final class EncryptProjectionTokenGenerator extends BaseEncryptSQLTokenGe
                     SelectStatement select = subquery.getSelect();
                     return new SelectStatementContext(selectStatementContext.getMetaDataMap(), selectStatementContext.getParameters(), select, selectStatementContext.getSchemaName());
                 }).ifPresent(result::add);
+        SelectStatement sqlStatement = selectStatementContext.getSqlStatement();
+        Collection<UnionSegment> unionSegments = sqlStatement.getUnionSegments();
+        if (unionSegments != null && !unionSegments.isEmpty()){
+            for (UnionSegment unionSegment : unionSegments) {
+                SelectStatement select = unionSegment.getSelectStatement();
+                SelectStatementContext selectStatement = new SelectStatementContext(selectStatementContext.getMetaDataMap(), selectStatementContext.getParameters(), select, selectStatementContext.getSchemaName());
+                result.add(selectStatement);
+            }
+        }
         return result;
     }
 

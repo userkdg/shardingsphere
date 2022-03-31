@@ -61,6 +61,11 @@ public class UserServiceImpl implements ExampleService {
 
     private void selectData(List<Long> userIds) {
         selectFixture1();
+        selectFixture2();
+    }
+
+    private void selectFixture2() {
+        userRepository.selectFixture2();
     }
 
     /**

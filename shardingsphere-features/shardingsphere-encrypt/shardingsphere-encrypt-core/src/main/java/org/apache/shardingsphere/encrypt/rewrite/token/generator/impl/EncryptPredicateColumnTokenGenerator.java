@@ -33,6 +33,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExistsSu
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.AndPredicate;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.union.UnionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.util.ColumnExtractor;
@@ -81,8 +82,20 @@ public final class EncryptPredicateColumnTokenGenerator extends BaseEncryptSQLTo
         List<SQLStatementContext<?>> sqlStatementContexts = new ArrayList<>();
         sqlStatementContexts.add(sqlStatementContext);
         if (sqlStatementContext instanceof SelectStatementContext) {
-            Collection<SelectStatementContext> subContexts = ((SelectStatementContext)sqlStatementContext).getSubqueryContexts().values();
+            SelectStatementContext selectStatementContext = (SelectStatementContext) sqlStatementContext;
+            Collection<SelectStatementContext> subContexts = (selectStatementContext).getSubqueryContexts().values();
             sqlStatementContexts.addAll(subContexts);
+            // union (all)
+            if (sqlStatementContext.getSqlStatement() instanceof SelectStatement) {
+                Collection<UnionSegment> unionSegments = ((SelectStatement) sqlStatementContext.getSqlStatement()).getUnionSegments();
+                if (unionSegments != null && !unionSegments.isEmpty()) {
+                    for (UnionSegment unionSegment : unionSegments) {
+                        SelectStatement select = unionSegment.getSelectStatement();
+                        SelectStatementContext selectStatement = new SelectStatementContext(selectStatementContext.getMetaDataMap(), selectStatementContext.getParameters(), select, selectStatementContext.getSchemaName());
+                        sqlStatementContexts.add(selectStatement);
+                    }
+                }
+            }
         }
         return sqlStatementContexts;
     }
