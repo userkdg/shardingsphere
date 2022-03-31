@@ -51,11 +51,34 @@ public class UserServiceImpl implements ExampleService {
         System.out.println("-------------- Process Success Begin ---------------");
         List<Long> userIds = insertData();
         printData();
+        selectData(userIds);
         updateData(userRepository.selectAll());
         printData();
         deleteData(userIds);
         printData();
         System.out.println("-------------- Process Success Finish --------------");
+    }
+
+    private void selectData(List<Long> userIds) {
+        selectFixture1();
+    }
+
+    /**
+     * 结论要调大-Xss的空间大小，eg:-Xss50M
+     */
+    private void selectFixture1() {
+        // select fixture
+        int capacity = 2000;
+        List<Long> userIds = new ArrayList<>(capacity);
+        for (int i = 0; i < capacity; i++) {
+            userIds.add((long) i);
+        }
+        System.out.println("-------------ing:selectFixture1-------------------");
+        List<User> users = userRepository.selectFixture1(userIds);
+        for (User each : users) {
+            System.out.println(each);
+        }
+        System.out.println("-------------ok:selectFixture1-------------------");
     }
 
     @SneakyThrows

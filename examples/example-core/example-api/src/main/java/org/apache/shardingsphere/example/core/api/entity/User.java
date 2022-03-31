@@ -17,8 +17,11 @@
 
 package org.apache.shardingsphere.example.core.api.entity;
 
+import lombok.Data;
+
 import java.io.Serializable;
 
+@Data
 public class User implements Serializable {
     
     private static final long serialVersionUID = 263434701950670170L;

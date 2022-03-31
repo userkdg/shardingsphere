@@ -19,11 +19,20 @@ package org.apache.shardingsphere.example.core.api.repository;
 
 import org.apache.shardingsphere.example.core.api.entity.User;
 
+import java.util.Collections;
 import java.util.List;
 
 public interface UserRepository extends CommonRepository<User, Long> {
 
     default void updateUsers(List<User> users) {
 
+    }
+
+    default List<User> selectFixture1(List<Long> userIdList) {
+        return Collections.emptyList();
+    }
+
+    default List<User> selectFixture2(List<Long> userIdList) {
+        return Collections.emptyList();
     }
 }

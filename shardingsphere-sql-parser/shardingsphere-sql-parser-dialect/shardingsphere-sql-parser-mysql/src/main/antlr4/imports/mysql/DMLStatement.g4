@@ -124,14 +124,6 @@ multipleTablesClause
     : tableAliasRefList FROM tableReferences | FROM tableAliasRefList USING tableReferences
     ;
 
-//ss_select:
-//    s_select+
-//    ;
-//
-//s_select:
-//    select ';'?
-//    ;
-
 select
     : queryExpression lockClauseList?
     | queryExpressionParens
@@ -338,7 +330,7 @@ joinSpecification
     ;
 
 whereClause
-    : WHERE expr
+    : WHERE (expr | LP_ expr RP_)
     ;
 
 groupByClause

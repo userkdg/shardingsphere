@@ -47,6 +47,15 @@
         <module>shardingsphere-test</module>
         <module>shardingsphere-distribution</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>dependency-examples</id>
+            <modules>
+                <module>examples</module>
+            </modules>
+        </profile>
+    </profiles>
     
     <properties>
         <java.version>1.8</java.version>

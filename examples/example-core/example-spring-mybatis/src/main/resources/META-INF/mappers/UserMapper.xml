@@ -61,4 +61,31 @@
             </where>
         </foreach>
     </update>
+
+    <select id="selectFixture1" resultType="org.apache.shardingsphere.example.core.api.entity.User">
+        SELECT
+        *
+        FROM
+        t_user
+        <where>
+            <foreach collection="userIdList" item="item">
+                OR (
+                user_id = #{item,jdbcType=INTEGER}
+                )
+            </foreach>
+        </where>
+    </select>
+
+    <select id="selectFixture2" resultMap="baseResultMap">
+        SELECT
+        *
+        FROM
+        t_user
+        <where>
+            user_id in
+            <foreach collection="userIdList" item="item" open="(" close=")">
+                #{item,jdbcType=INTEGER}
+            </foreach>
+        </where>
+    </select>
 </mapper>

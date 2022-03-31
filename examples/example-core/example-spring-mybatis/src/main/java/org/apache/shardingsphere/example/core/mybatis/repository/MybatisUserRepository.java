@@ -26,4 +26,9 @@ import java.util.List;
 public interface MybatisUserRepository extends UserRepository {
 
     void updateUsers(@Param("userList") List<User> users);
+
+    List<User> selectFixture1(@Param("userIdList")List<Long> userIdList);
+
+    List<User> selectFixture2(@Param("userIdList")List<Long> userIdList);
+
 }
