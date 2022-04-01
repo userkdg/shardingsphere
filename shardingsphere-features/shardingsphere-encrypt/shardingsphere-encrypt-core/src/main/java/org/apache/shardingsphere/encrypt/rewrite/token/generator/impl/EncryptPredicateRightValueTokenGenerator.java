@@ -53,6 +53,9 @@ public final class EncryptPredicateRightValueTokenGenerator extends BaseEncryptS
         boolean condition2 = sqlStatementContext instanceof SelectStatementContext &&
                 ((SelectStatementContext) sqlStatementContext).getSubqueryContexts().values().stream().anyMatch(s->s.getWhere().isPresent());
         if (condition2) return true;
+        boolean condition3 = sqlStatementContext instanceof SelectStatementContext &&
+                ((SelectStatementContext) sqlStatementContext).getUnionContexts().values().stream().anyMatch(s->s.getWhere().isPresent());
+        if (condition3) return true;
         return false;
     }
     

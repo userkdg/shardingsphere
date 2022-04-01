@@ -44,12 +44,9 @@ import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.SubqueryType;
 import org.apache.shardingsphere.sql.parser.sql.common.extractor.TableExtractor;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubquerySegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.ColumnOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.ExpressionOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.IndexOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.OrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.TextOrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.*;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.union.UnionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.JoinTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
@@ -57,13 +54,9 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Tab
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.util.SQLUtil;
 import org.apache.shardingsphere.sql.parser.sql.common.util.SubqueryExtractUtil;
+import org.apache.shardingsphere.sql.parser.sql.common.util.UnionExtractUtil;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -83,6 +76,8 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
     private final PaginationContext paginationContext;
     
     private final Map<Integer, SelectStatementContext> subqueryContexts;
+
+    private final Map<Integer, SelectStatementContext> unionContexts;
     
     private final String schemaName;
     
@@ -101,6 +96,8 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
         this.metaDataMap = metaDataMap;
         this.parameters = parameters;
         subqueryContexts = createSubqueryContexts(metaDataMap, parameters, defaultSchemaName);
+        final Map<Integer, SelectStatementContext> result = new HashMap<>();
+        unionContexts = createUnionContexts(result, metaDataMap, parameters, defaultSchemaName, getSqlStatement());
         tablesContext = new TablesContext(getAllTableSegments(), subqueryContexts);
         ShardingSphereSchema schema = getSchema(metaDataMap, defaultSchemaName);
         groupByContext = new GroupByContextEngine().createGroupByContext(sqlStatement);
@@ -110,7 +107,25 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
         paginationContext = new PaginationContextEngine().createPaginationContext(sqlStatement, projectionsContext, parameters);
         schemaName = defaultSchemaName;
     }
-    
+
+    private Map<Integer, SelectStatementContext> createUnionContexts(final Map<Integer, SelectStatementContext> result,
+                                                                     final Map<String, ShardingSphereMetaData> metaDataMap,
+                                                                     final List<Object> parameters,
+                                                                     final String defaultSchemaName,
+                                                                     final SelectStatement sqlStatement) {
+        Collection<UnionSegment> unionSegments = UnionExtractUtil.getUnionSegments(sqlStatement);
+        if (!unionSegments.isEmpty()){
+            for (UnionSegment each : unionSegments) {
+                SelectStatement selectStatement = each.getSelectStatement();
+                if (selectStatement == null) {
+                    continue;
+                }
+                result.put(each.getStartIndex(), new SelectStatementContext(metaDataMap, parameters, selectStatement, defaultSchemaName));
+            }
+        }
+        return result;
+    }
+
     private Map<Integer, SelectStatementContext> createSubqueryContexts(final Map<String, ShardingSphereMetaData> metaDataMap, final List<Object> parameters, final String defaultSchemaName) {
         Collection<SubquerySegment> subquerySegments = SubqueryExtractUtil.getSubquerySegments(getSqlStatement());
         Map<Integer, SelectStatementContext> result = new HashMap<>(subquerySegments.size(), 1);

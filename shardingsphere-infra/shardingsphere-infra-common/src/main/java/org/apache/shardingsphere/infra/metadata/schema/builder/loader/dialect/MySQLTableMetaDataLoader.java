@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.infra.metadata.schema.builder.loader.dialect;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.metadata.schema.builder.loader.DataTypeLoader;
 import org.apache.shardingsphere.infra.metadata.schema.builder.spi.DialectTableMetaDataLoader;
 import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 /**
  * Table meta data loader for MySQL.
  */
+@Slf4j
 public final class MySQLTableMetaDataLoader implements DialectTableMetaDataLoader {
     
     private static final String ORDER_BY_ORDINAL_POSITION = " ORDER BY ORDINAL_POSITION";
@@ -57,10 +59,14 @@ public final class MySQLTableMetaDataLoader implements DialectTableMetaDataLoade
     @Override
     public Map<String, TableMetaData> load(final DataSource dataSource, final Collection<String> tables) throws SQLException {
         Map<String, TableMetaData> result = new LinkedHashMap<>();
-        Map<String, Collection<ColumnMetaData>> columnMetaDataMap = loadColumnMetaDataMap(dataSource, tables);
-        Map<String, Collection<IndexMetaData>> indexMetaDataMap = columnMetaDataMap.isEmpty() ? Collections.emptyMap() : loadIndexMetaData(dataSource, columnMetaDataMap.keySet());
-        for (Entry<String, Collection<ColumnMetaData>> entry : columnMetaDataMap.entrySet()) {
-            result.put(entry.getKey(), new TableMetaData(entry.getKey(), entry.getValue(), indexMetaDataMap.getOrDefault(entry.getKey(), Collections.emptyList())));
+        try {
+            Map<String, Collection<ColumnMetaData>> columnMetaDataMap = loadColumnMetaDataMap(dataSource, tables);
+            Map<String, Collection<IndexMetaData>> indexMetaDataMap = columnMetaDataMap.isEmpty() ? Collections.emptyMap() : loadIndexMetaData(dataSource, columnMetaDataMap.keySet());
+            for (Entry<String, Collection<ColumnMetaData>> entry : columnMetaDataMap.entrySet()) {
+                result.put(entry.getKey(), new TableMetaData(entry.getKey(), entry.getValue(), indexMetaDataMap.getOrDefault(entry.getKey(), Collections.emptyList())));
+            }
+        } catch (Exception e) {
+            log.error("数据源{}，获取元数据信息失败", dataSource, e);
         }
         return result;
     }

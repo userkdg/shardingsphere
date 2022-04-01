@@ -150,13 +150,9 @@ public final class EncryptConditionEngine {
             SelectStatement selectStatement = selectStatementContext.getSqlStatement();
             result.addAll(WhereExtractUtil.getSubqueryWhereSegments(selectStatement));
             result.addAll(WhereExtractUtil.getJoinWhereSegments(selectStatement));
-            if (selectStatement.getUnionSegments() != null && !selectStatement.getUnionSegments().isEmpty()){
-                for (UnionSegment unionSegment : selectStatement.getUnionSegments()) {
-                    Collection<WhereSegment> whereSegments = getWhereSegments(new SelectStatementContext(selectStatementContext.getMetaDataMap(),
-                            selectStatementContext.getParameters(),
-                            unionSegment.getSelectStatement(), selectStatementContext.getSchemaName()));
-                    result.addAll(whereSegments);
-                }
+            Collection<SelectStatementContext> selectStatementContexts = selectStatementContext.getUnionContexts().values();
+            for (SelectStatementContext each : selectStatementContexts) {
+                result.addAll(getWhereSegments(each));
             }
         }
         if (sqlStatementContext instanceof InsertStatementContext && null != ((InsertStatementContext) sqlStatementContext).getInsertSelectContext()) {

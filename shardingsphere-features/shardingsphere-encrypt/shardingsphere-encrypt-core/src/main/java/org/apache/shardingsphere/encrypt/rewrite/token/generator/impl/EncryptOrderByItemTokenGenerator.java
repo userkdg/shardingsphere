@@ -104,6 +104,7 @@ public final class EncryptOrderByItemTokenGenerator extends BaseEncryptSQLTokenG
             List<SelectStatementContext> contexts = new LinkedList<>();
             contexts.add((SelectStatementContext) sqlStatementContext);
             contexts.addAll(((SelectStatementContext) sqlStatementContext).getSubqueryContexts().values());
+            contexts.addAll(((SelectStatementContext) sqlStatementContext).getUnionContexts().values());
             Collection<OrderByItem> orderByItemList = new LinkedList<>();
             for (SelectStatementContext selectStatementContext : contexts) {
                 if (!selectStatementContext.getOrderByContext().isGenerated()) {

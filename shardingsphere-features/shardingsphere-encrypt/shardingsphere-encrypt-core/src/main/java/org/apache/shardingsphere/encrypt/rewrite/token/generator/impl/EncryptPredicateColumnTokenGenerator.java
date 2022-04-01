@@ -85,17 +85,7 @@ public final class EncryptPredicateColumnTokenGenerator extends BaseEncryptSQLTo
             SelectStatementContext selectStatementContext = (SelectStatementContext) sqlStatementContext;
             Collection<SelectStatementContext> subContexts = (selectStatementContext).getSubqueryContexts().values();
             sqlStatementContexts.addAll(subContexts);
-            // union (all)
-            if (sqlStatementContext.getSqlStatement() instanceof SelectStatement) {
-                Collection<UnionSegment> unionSegments = ((SelectStatement) sqlStatementContext.getSqlStatement()).getUnionSegments();
-                if (unionSegments != null && !unionSegments.isEmpty()) {
-                    for (UnionSegment unionSegment : unionSegments) {
-                        SelectStatement select = unionSegment.getSelectStatement();
-                        SelectStatementContext selectStatement = new SelectStatementContext(selectStatementContext.getMetaDataMap(), selectStatementContext.getParameters(), select, selectStatementContext.getSchemaName());
-                        sqlStatementContexts.add(selectStatement);
-                    }
-                }
-            }
+            sqlStatementContexts.addAll(((SelectStatementContext) sqlStatementContext).getUnionContexts().values());
         }
         return sqlStatementContexts;
     }

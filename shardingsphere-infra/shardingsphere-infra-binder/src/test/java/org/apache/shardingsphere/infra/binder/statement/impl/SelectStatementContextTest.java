@@ -23,6 +23,7 @@ import org.apache.shardingsphere.infra.database.DefaultSchema;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.AggregationType;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.OrderDirection;
+import org.apache.shardingsphere.sql.parser.sql.common.constant.UnionType;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
@@ -39,6 +40,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.Co
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.IndexOrderByItemSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.OrderByItemSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.union.UnionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.AliasSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
@@ -52,9 +54,7 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.sql92.dml.SQL9
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.sqlserver.dml.SQLServerSelectStatement;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
+import java.util.*;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
@@ -108,7 +108,30 @@ public final class SelectStatementContextTest {
         selectStatementContext.setIndexes(Collections.emptyMap());
         assertThat(selectStatementContext.getOrderByContext().getItems().iterator().next().getIndex(), is(4));
     }
-    
+    @Test
+    public void assertUnionContextWithOwnerForMySQL() {
+        assertUnionContextWithOwner(new MySQLSelectStatement());
+    }
+
+    private void assertUnionContextWithOwner(SelectStatement selectStatement) {
+        ShardingSphereMetaData metaData = mock(ShardingSphereMetaData.class);
+        selectStatement.setOrderBy(new OrderBySegment(0, 0, Collections.singletonList(createOrderByItemSegment(COLUMN_ORDER_BY_WITH_OWNER))));
+        selectStatement.setUnionSegments(createUnionSegments());
+        selectStatement.setProjections(createProjectionsSegment());
+        selectStatement.setFrom(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("table"))));
+        SelectStatementContext selectStatementContext = new SelectStatementContext(Collections.singletonMap(DefaultSchema.LOGIC_NAME, metaData),
+                Collections.emptyList(), selectStatement, DefaultSchema.LOGIC_NAME);
+        selectStatementContext.setIndexes(Collections.emptyMap());
+        assertThat(selectStatementContext.getOrderByContext().getItems().iterator().next().getIndex(), is(1));
+    }
+
+    private Collection<UnionSegment> createUnionSegments() {
+        List<UnionSegment> segments = new ArrayList<>();
+        segments.add(new UnionSegment(UnionType.UNION_ALL, new MySQLSelectStatement(), 0, 0));
+        segments.add(new UnionSegment(UnionType.UNION_ALL, new MySQLSelectStatement(), 0, 0));
+        return segments;
+    }
+
     @Test
     public void assertSetIndexForItemsByColumnOrderByWithOwnerForMySQL() {
         assertSetIndexForItemsByColumnOrderByWithOwner(new MySQLSelectStatement());
