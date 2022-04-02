@@ -20,10 +20,12 @@ package org.apache.shardingsphere.sql.parser.sql.common.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.union.UnionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * union extract utility class.
@@ -38,7 +40,29 @@ public final class UnionExtractUtil {
      * @return subquery segment collection
      */
     public static Collection<UnionSegment> getUnionSegments(final SelectStatement selectStatement) {
-        return new LinkedList<>(selectStatement.getUnionSegments());
+        List<UnionSegment> result = new LinkedList<>();
+        if (selectStatement.getFrom() instanceof SubqueryTableSegment) {
+            SubqueryTableSegment subqueryTableSegment = (SubqueryTableSegment) selectStatement.getFrom();
+            Collection<UnionSegment> unionSegments = subqueryTableSegment.getSubquery().getSelect().getUnionSegments();
+            if (!unionSegments.isEmpty()){
+                result.addAll(unionSegments);
+                findUnionSegment0(result, unionSegments);
+            }
+        }else {
+            Collection<UnionSegment> unionSegments = selectStatement.getUnionSegments();
+            if (!unionSegments.isEmpty()){
+                result.addAll(unionSegments);
+                findUnionSegment0(result, unionSegments);
+            }
+        }
+        return result;
+    }
+
+    private static void findUnionSegment0(List<UnionSegment> result, Collection<UnionSegment> unionSegments) {
+        for (UnionSegment each : unionSegments) {
+            SelectStatement stats = each.getSelectStatement();
+            result.addAll(getUnionSegments(stats));
+        }
     }
 
 }

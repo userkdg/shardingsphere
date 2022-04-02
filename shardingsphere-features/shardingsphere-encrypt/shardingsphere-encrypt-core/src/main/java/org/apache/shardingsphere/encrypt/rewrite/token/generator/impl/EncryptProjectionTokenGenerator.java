@@ -84,7 +84,7 @@ public final class EncryptProjectionTokenGenerator extends BaseEncryptSQLTokenGe
             ColumnProjectionSegment columnSegment = (ColumnProjectionSegment) projection;
             ColumnProjection columnProjection = buildColumnProjection(columnSegment);
             List<Projection> subQueryContextAllProjections = getTableSubQueryContextAllProjections(selectStatementContext.getSubqueryContexts());
-            // 不需要考虑子查询的union查询，不存在该语法
+            // 不需要考虑子查询的union查询
             columnProjection.setSubqueryProjectionEqual(findSubQueryProjectionEqual(subQueryContextAllProjections, columnProjection));
             String tableName = columnTableNames.get(columnProjection.getExpression());
             if (null != tableName && getEncryptRule().findEncryptor(tableName, columnProjection.getName()).isPresent()) {
@@ -94,7 +94,7 @@ public final class EncryptProjectionTokenGenerator extends BaseEncryptSQLTokenGe
         if (projection instanceof ShorthandProjectionSegment) {
             ShorthandProjectionSegment shorthandSegment = (ShorthandProjectionSegment) projection;
             Collection<ColumnProjection> actualColumns = getShorthandProjection(shorthandSegment, selectStatementContext.getProjectionsContext(), selectStatementContext.getSubqueryContexts()).getActualColumns().values();
-            // 不需要考虑子查询的union查询，不存在该语法
+            // 不需要考虑子查询的union查询
             List<Projection> subQueryContextAllProjections = getTableSubQueryContextAllProjections(selectStatementContext.getSubqueryContexts());
             for (ColumnProjection columnProjection : actualColumns) {
                 columnProjection.setSubqueryProjectionEqual(findSubQueryProjectionEqual(subQueryContextAllProjections, columnProjection));
