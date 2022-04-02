@@ -22,6 +22,7 @@ import org.apache.shardingsphere.example.core.api.entity.User;
 import org.apache.shardingsphere.example.core.api.repository.UserRepository;
 
 import java.util.List;
+import java.util.Map;
 
 public interface MybatisUserRepository extends UserRepository {
 
@@ -30,5 +31,9 @@ public interface MybatisUserRepository extends UserRepository {
     List<User> selectFixture1(@Param("userIdList")List<Long> userIdList);
 
     List<User> selectFixture2();
+
+    List<Map<String,Object>> selectFixture3();
+
+    List<Map<String,Object>> selectFixture4();
 
 }

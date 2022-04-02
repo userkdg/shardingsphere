@@ -20,14 +20,20 @@
 <mapper namespace="org.apache.shardingsphere.example.core.mybatis.repository.MybatisUserRepository">
     <resultMap id="baseResultMap" type="org.apache.shardingsphere.example.core.api.entity.User">
         <result column="user_id" property="userId" jdbcType="INTEGER"/>
-<!--        <result column="user_name" property="userName" jdbcType="LONGVARCHAR"/>-->
+        <!--        <result column="user_name" property="userName" jdbcType="LONGVARCHAR"/>-->
         <result column="user_name" property="userName" jdbcType="VARCHAR"/>
         <result column="pwd" property="pwd" jdbcType="VARCHAR"/>
         <result column="assisted_query_pwd" property="assistedQueryPwd" jdbcType="VARCHAR"/>
     </resultMap>
 
     <update id="createTableIfNotExists">
-        CREATE TABLE IF NOT EXISTS t_user (user_id INT NOT NULL AUTO_INCREMENT, user_name VARCHAR(2048), pwd VARCHAR(200), PRIMARY KEY (user_id));
+        CREATE TABLE IF NOT EXISTS t_user
+        (
+                user_id   INT NOT NULL AUTO_INCREMENT,
+                user_name VARCHAR(2048),
+                pwd       VARCHAR(200),
+                PRIMARY KEY (user_id)
+        );
     </update>
 
     <update id="truncateTable">
@@ -39,15 +45,19 @@
     </update>
 
     <insert id="insert">
-        INSERT INTO t_user (user_id, user_name, pwd) VALUES (#{userId,jdbcType=INTEGER}, #{userName,jdbcType=VARCHAR}, #{pwd,jdbcType=VARCHAR})
+        INSERT INTO t_user (user_id, user_name, pwd)
+        VALUES (#{userId,jdbcType=INTEGER}, #{userName,jdbcType=VARCHAR}, #{pwd,jdbcType=VARCHAR})
     </insert>
 
     <delete id="delete">
-        DELETE FROM t_user WHERE user_id = #{userId,jdbcType=INTEGER};
+        DELETE
+        FROM t_user
+        WHERE user_id = #{userId,jdbcType=INTEGER};
     </delete>
 
     <select id="selectAll" resultMap="baseResultMap">
-        SELECT * FROM t_user;
+        SELECT *
+        FROM t_user;
     </select>
 
     <update id="updateUsers">
@@ -93,5 +103,34 @@
                      left join t_user b on b.user_name = a.user_name
         where a.user_name = 'xxxx'
           and a.pwd = '1212'
+    </select>
+
+    <select id="selectFixture3" resultType="map">
+        SELECT a.user_id, a.user_name as user1, a.user_name as user2
+        FROM t_user a
+                     left join t_user b on b.user_name = a.user_name
+        union all
+        SELECT a.user_id, a.user_name as user1, a.user_name as user2
+        FROM t_user a
+                     left join t_user b on b.user_name = a.user_name
+    </select>
+
+    <select id="selectFixture4" resultType="map">
+        select t.*
+        from (
+                     SELECT a.user_id,
+                            convert(aes_decrypt(from_base64(a.user_name), '123456abc') using utf8) as user1,
+                            convert(aes_decrypt(from_base64(a.user_name), '123456abc') using utf8) as user2,
+                            a.pwd
+                     FROM t_user a
+                                  left join t_user b on b.user_name = a.user_name
+                     union all
+                     SELECT a.user_id,
+                            convert(aes_decrypt(from_base64(a.user_name), '123456abc') using utf8) as user1,
+                            convert(aes_decrypt(from_base64(a.user_name), '123456abc') using utf8) as user2,
+                            a.pwd
+                     FROM t_user a
+                                  left join t_user b on b.user_name = a.user_name
+                     ) t
     </select>
 </mapper>

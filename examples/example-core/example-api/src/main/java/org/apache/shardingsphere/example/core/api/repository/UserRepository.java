@@ -21,6 +21,7 @@ import org.apache.shardingsphere.example.core.api.entity.User;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public interface UserRepository extends CommonRepository<User, Long> {
 
@@ -33,6 +34,14 @@ public interface UserRepository extends CommonRepository<User, Long> {
     }
 
     default List<User> selectFixture2() {
+        return Collections.emptyList();
+    }
+
+    default  List<Map<String,Object>> selectFixture3() {
+        return Collections.emptyList();
+    }
+
+    default  List<Map<String,Object>> selectFixture4() {
         return Collections.emptyList();
     }
 }

@@ -38,6 +38,14 @@ import java.util.Properties;
  * bluemoon AES encrypt algorithm.
  * 该算法也是基于aes，区别在于encrypt、decrypt和mysql数据库的aes_encrypt、aes_decrypt算法一致（加解密结果一样）
  * 用于加密模块中，框架不支持的可以用mysql的算法进行加解密.
+ * <pre>
+ *     select to_base64(aes_encrypt('test', 'key'))                                       as a,
+ *        aes_decrypt(from_base64('npzkTNnfKyAfUZR+A7zL4g=='), 'key')                     as c,
+ *
+ *        convert(to_base64(aes_encrypt('test', 'key')) USING utf8)                       as b,
+ *        convert(aes_decrypt(from_base64('npzkTNnfKyAfUZR+A7zL4g=='), 'key') using utf8) as d;
+ * </pre>
+ * end.
  */
 @Getter
 @Setter

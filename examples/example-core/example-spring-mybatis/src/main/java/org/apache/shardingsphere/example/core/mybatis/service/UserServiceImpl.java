@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Service("encrypt")
 public class UserServiceImpl implements ExampleService {
@@ -60,10 +61,20 @@ public class UserServiceImpl implements ExampleService {
     }
 
     private void selectData(List<Long> userIds) {
+        selectFixture4();
+        selectFixture3();
         selectFixture1();
         selectFixture2();
     }
 
+    private void selectFixture3() {
+        List<Map<String,Object>> res = userRepository.selectFixture3();
+        System.out.println(res);
+    }
+    private void selectFixture4() {
+        List<Map<String,Object>> res = userRepository.selectFixture4();
+        System.out.println(res);
+    }
     private void selectFixture2() {
         userRepository.selectFixture2();
     }
