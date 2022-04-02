@@ -32,7 +32,7 @@ import java.util.LinkedList;
 public final class UnionExtractUtil {
 
     /**
-     * Get subquery segment from SelectStatement.
+     * Get union segment from SelectStatement.
      *
      * @param selectStatement SelectStatement
      * @return subquery segment collection

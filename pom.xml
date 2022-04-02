@@ -42,9 +42,6 @@
         <module>shardingsphere-proxy</module>
         
         <module>shardingsphere-features</module>
-        <module>shardingsphere-agent</module>
-        
-        <module>shardingsphere-test</module>
         <module>shardingsphere-distribution</module>
     </modules>
     
@@ -1019,9 +1016,11 @@
     
     <profiles>
         <profile>
-            <id>dependency-examples</id>
+            <id>modules-extra</id>
             <modules>
                 <module>examples</module>
+                <module>shardingsphere-agent</module>
+                <module>shardingsphere-test</module>
             </modules>
         </profile>
         <profile>
