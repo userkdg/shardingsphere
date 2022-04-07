@@ -26,17 +26,17 @@ public class User implements Serializable {
     
     private static final long serialVersionUID = 263434701950670170L;
     
-    private int userId;
+    private Integer userId;
     
     private String userName;
     
     private String pwd;
     
-    public int getUserId() {
+    public Integer getUserId() {
         return userId;
     }
     
-    public void setUserId(final int userId) {
+    public void setUserId(final Integer userId) {
         this.userId = userId;
     }
     

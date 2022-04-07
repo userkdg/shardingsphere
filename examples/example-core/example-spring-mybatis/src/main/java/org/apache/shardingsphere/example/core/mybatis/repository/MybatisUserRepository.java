@@ -21,10 +21,13 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.shardingsphere.example.core.api.entity.User;
 import org.apache.shardingsphere.example.core.api.repository.UserRepository;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
 public interface MybatisUserRepository extends UserRepository {
+
+    void insertFixture1(@Param("user") User entity) throws SQLException;
 
     void updateUsers(@Param("userList") List<User> users);
 

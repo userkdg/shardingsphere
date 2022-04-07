@@ -44,9 +44,14 @@
         DROP TABLE IF EXISTS t_user;
     </update>
 
-    <insert id="insert">
+    <insert id="insert" keyProperty="userId" useGeneratedKeys="true">
         INSERT INTO t_user (user_id, user_name, pwd)
         VALUES (#{userId,jdbcType=INTEGER}, #{userName,jdbcType=VARCHAR}, #{pwd,jdbcType=VARCHAR})
+    </insert>
+
+    <insert id="insertFixture1" keyProperty="userId" useGeneratedKeys="true">
+        INSERT INTO t_user (user_name, pwd)
+        VALUES (#{user.userName,jdbcType=VARCHAR}, #{user.pwd,jdbcType=VARCHAR})
     </insert>
 
     <delete id="delete">

@@ -28,11 +28,9 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.P
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.handler.dml.InsertStatementHandler;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Generated key context.
@@ -99,6 +97,10 @@ public final class GeneratedKeyContextEngine {
                 result.getGeneratedValues().add((Comparable<?>) ((LiteralExpressionSegment) each).getLiterals());
             }
         }
+        // 2022年4月7日:不允许设置生成值为null或者用户主动设置为null，过滤掉，由于影响到ShardingSphere(Prepared)Statement.getGeneratedKeys获取值
+        List<Comparable<?>> actual = result.getGeneratedValues().stream().filter(Objects::nonNull).collect(Collectors.toList());
+        result.getGeneratedValues().clear();
+        result.getGeneratedValues().addAll(actual);
         return result;
     }
     

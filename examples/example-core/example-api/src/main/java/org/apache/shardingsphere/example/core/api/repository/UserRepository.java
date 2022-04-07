@@ -19,11 +19,16 @@ package org.apache.shardingsphere.example.core.api.repository;
 
 import org.apache.shardingsphere.example.core.api.entity.User;
 
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public interface UserRepository extends CommonRepository<User, Long> {
+
+    default void insertFixture1(User user) throws SQLException {
+
+    }
 
     default void updateUsers(List<User> users) {
 

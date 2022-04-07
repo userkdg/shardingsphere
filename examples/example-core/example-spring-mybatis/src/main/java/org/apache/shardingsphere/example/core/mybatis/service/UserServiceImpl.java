@@ -117,9 +117,18 @@ public class UserServiceImpl implements ExampleService {
         for (int i = 1; i <= 10; i++) {
             User user = new User();
             user.setUserId(i);
+            user.setUserId(null);
             user.setUserName("test_mybatis_" + i);
             user.setPwd("pwd_mybatis_" + i);
             userRepository.insert(user);
+            result.add((long) user.getUserId());
+        }
+        for (int i = 1; i <= 10; i++) {
+            User user = new User();
+            user.setUserId(null);
+            user.setUserName("test_mybatis_" + i);
+            user.setPwd("pwd_mybatis_" + i);
+            userRepository.insertFixture1(user);
             result.add((long) user.getUserId());
         }
         return result;
