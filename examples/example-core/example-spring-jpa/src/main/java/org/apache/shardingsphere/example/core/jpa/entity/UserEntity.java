@@ -33,7 +33,7 @@ public final class UserEntity extends User {
     @Id
     @Column(name = "user_id")
     @Override
-    public int getUserId() {
+    public Integer getUserId() {
         return super.getUserId();
     }
     
